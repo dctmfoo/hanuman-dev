@@ -1,10 +1,10 @@
 {
-  "name": "halo-workflow",
+  "name": "hanuman-dev",
   "version": "0.0.0",
   "private": false,
   "type": "module",
   "bin": {
-    "halo-workflow": "dist/cli.js"
+    "hanuman-dev": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",

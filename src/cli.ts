@@ -5,7 +5,7 @@ import { Command } from 'commander';
 const program = new Command();
 
 program
-  .name('halo-workflow')
+  .name('hanuman-dev')
   .description('Repo-agnostic agentic workflow orchestrator (plan → work → review → compound).')
   .version('0.0.0');
 

@@ -1,6 +1,6 @@
 # Architecture
 
-`halo-workflow` is a repo-agnostic workflow orchestrator for agentic development.
+`hanuman-dev` is a repo-agnostic workflow orchestrator for agentic development.
 
 ## Core components
 
@@ -13,7 +13,7 @@ A deterministic state machine drives the workflow:
 All state is persisted under `HALO_HOME` so the workflow can resume after restarts.
 
 ### 2) Engine adapters
-`halo-workflow` does not hard-code CLI invocations throughout the codebase.
+`hanuman-dev` does not hard-code CLI invocations throughout the codebase.
 Instead it uses adapter modules:
 
 - `CodexEngine` (Codex CLI)

@@ -1,4 +1,4 @@
-# halo-workflow
+# hanuman-dev
 
 Repo-agnostic, multi-model workflow template for agentic development.
 
@@ -42,11 +42,11 @@ We adapt these ideas to a repo-agnostic, multi-engine, multi-model workflow orch
 ## Quickstart (planned)
 ```bash
 # install globally (planned)
-npm i -g halo-workflow
+npm i -g hanuman-dev
 
 # initialize in a repo (planned)
-halo-workflow init
+hanuman-dev init
 
 # run a workflow from a brief (planned)
-halo-workflow run "add an admin dashboard"
+hanuman-dev run "add an admin dashboard"
 ```
