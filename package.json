@@ -1,0 +1,23 @@
+{
+  "name": "halo-workflow",
+  "version": "0.0.0",
+  "private": false,
+  "type": "module",
+  "bin": {
+    "halo-workflow": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.2",
+    "vitest": "^4.0.18"
+  }
+}

@@ -1,0 +1,39 @@
+# halo-workflow
+
+Repo-agnostic, multi-model workflow template for agentic development.
+
+Goal: you talk in chat → a reusable workflow orchestrator runs:
+
+1) **Plan** (specialized planner agent produces PRD + runnable task breakdown)
+2) **Work** (loop executor runs tasks in isolated worktrees)
+3) **Review** (automated review + human gate)
+4) **Compound** (codify learnings so the next unit of work is easier)
+
+Design principles:
+- **Multi-model by default** (avoid single-model blindness):
+  - plan/review → Claude (Opus by default)
+  - execute → Codex (gpt-5.2-codex by default)
+- **Adapters** for engine CLIs (Codex CLI, Claude Code CLI) so CLI flag changes are updated in one place.
+- **Durable workflow state** under `HALO_HOME` (default `~/.halo`).
+- **Repo-agnostic**: per-repo config lives in `.halo/config.json`.
+
+## Status
+Bootstrap scaffold (v0). PRD + engine adapter design docs included.
+
+## Docs
+- [Architecture](docs/01-architecture.md)
+- [Workflow model](docs/02-workflow.md)
+- [Engine adapters](docs/03-engines.md)
+- [Repo config](docs/04-config.md)
+
+## Quickstart (planned)
+```bash
+# install globally (planned)
+npm i -g halo-workflow
+
+# initialize in a repo (planned)
+halo-workflow init
+
+# run a workflow from a brief (planned)
+halo-workflow run "add an admin dashboard"
+```
