@@ -20,6 +20,19 @@ Design principles:
 ## Status
 Bootstrap scaffold (v0). PRD + engine adapter design docs included.
 
+## Credits / Inspirations
+
+This project is inspired by and builds on patterns and tooling from:
+
+- **Ralph pattern** (Geoffrey Huntley) — the loop model and “small stories + feedback” philosophy:
+  - https://ghuntley.com/ralph/
+- **snarktank/ralph** — the canonical bash-loop implementation and conventions (prd.json + progress.txt):
+  - https://github.com/snarktank/ralph
+- **Compound Engineering** (Every / EveryInc) — Plan → Work → Review → Compound workflow framing:
+  - https://github.com/EveryInc/compound-engineering-plugin
+
+We adapt these ideas to a repo-agnostic, multi-engine, multi-model workflow orchestrator.
+
 ## Docs
 - [Architecture](docs/01-architecture.md)
 - [Workflow model](docs/02-workflow.md)
