@@ -16,6 +16,9 @@ This folder contains reference docs for hanuman-dev.
 - [Functional spec (v0.1)](functional-spec-v0.1.md) — end-to-end behavior and goals.
 - [PRD (v0.1)](prd-v0.1.md) — requirements and scope.
 
+## Templates
+- [Agent-readiness PRD template](templates/agent-readiness/prd.template.json) — copy into a repo as `prd.json`.
+
 ## Golden Commands
 
 These commands are run by `pnpm check:docs` in CI to keep doc examples honest.

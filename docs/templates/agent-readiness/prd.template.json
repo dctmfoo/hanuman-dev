@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "0.1",
+  "title": "Agent readiness: <repo-name>",
+  "repo": {
+    "name": "<repo-name>",
+    "path": "<absolute-or-relative-path>"
+  },
+  "principles": [
+    "Keep stories small (S/M)",
+    "Prefer tests when practical",
+    "Document tradeoffs when skipping tests"
+  ],
+  "stories": [
+    {
+      "id": "ARXX-template-story",
+      "title": "Describe the smallest shippable change",
+      "size": "S",
+      "acceptance": [
+        "State the outcome in user-visible terms",
+        "List any files or behaviors that must change"
+      ],
+      "constraints": [
+        "Add tests if the change is risky",
+        "Keep scope focused to a single area"
+      ],
+      "relevance": {
+        "tags": ["readiness", "docs"],
+        "notes": "Why this story matters for agent readiness."
+      }
+    }
+  ]
+}

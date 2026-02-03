@@ -57,6 +57,39 @@ export HALO_HOME="$HOME/.halo"
 node /path/to/hanuman-dev/dist/cli.js run --prd /path/to/prd.json --sandbox
 ```
 
+## Agent-Readiness Template
+
+If you are running agent-readiness work across multiple repos, start from the master template:
+
+```bash
+cp docs/templates/agent-readiness/prd.template.json /path/to/target-repo/prd.json
+```
+
+Then update the copied file:
+- Set `title` and `repo`.
+- Replace the placeholder story with your repo-specific stories.
+- Keep stories sized `S` or `M` for v0.1 validation.
+
+### Relevance Convention (No Runner Changes)
+
+Use an optional `relevance` object on each story to capture why the story matters:
+
+```json
+{
+  "id": "AR01-example",
+  "title": "Document the agent-readiness PRD template",
+  "size": "S",
+  "acceptance": ["Docs explain how to copy the template"],
+  "relevance": {
+    "tags": ["readiness", "docs"],
+    "notes": "Why this story matters for agent readiness."
+  }
+}
+```
+
+`relevance.tags` should be short, kebab-case labels. `relevance.notes` should be a single sentence.
+This metadata is for humans; the v0.1 executor ignores unknown fields, so no runner changes are needed.
+
 ### What gets created
 
 Each run creates a run directory:
