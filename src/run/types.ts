@@ -13,8 +13,15 @@ export type RunJsonV01 = {
   runId: string;
   title?: string;
   createdAt: string;
+
+  /** Contract fields (docs/prd-v0.1.md) */
+  startTime?: string;
+  endTime?: string;
+
+  /** Legacy/internal aliases (kept for compatibility) */
   startedAt?: string;
   finishedAt?: string;
+
   cwd: string;
   repo: {
     path: string;
@@ -47,7 +54,13 @@ export type RunJsonV01 = {
     completedStoryIds: string[];
   };
   stopReason?: StopReason;
+
+  /** Contract field (docs/prd-v0.1.md) */
+  exitStatus?: number;
+
+  /** Legacy/internal alias */
   exitCode?: number;
+
   error?: { message: string; stack?: string };
 };
 

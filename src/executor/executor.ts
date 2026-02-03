@@ -78,11 +78,30 @@ export async function runExecutor(opts: {
     await writeJson(storyArtifactPath, {
       story,
       codexExitCode: r.code,
+      codexSignal: r.signal,
       lastOutputJson: r.lastOutputJson
     });
 
     if (r.code !== 0) {
       return { stopReason: 'ENGINE_ERROR', exitCode: r.code || 1, run: opts.run };
+    }
+
+    // Enforce machine-checkable output per step (v0.1): must have a parseable final output.
+    const out = r.lastOutputJson as any;
+    const ok =
+      out &&
+      typeof out === 'object' &&
+      typeof out.summary === 'string' &&
+      (out.status === 'ok' || out.status === 'needs_human' || out.status === 'failed');
+    if (!ok) {
+      return {
+        stopReason: 'ENGINE_ERROR',
+        exitCode: 1,
+        run: {
+          ...opts.run,
+          error: { message: 'Codex produced no valid JSON output matching the expected schema.' }
+        }
+      };
     }
 
     completed.add(story.id);

@@ -55,6 +55,7 @@ program
     const runJson = await readJson<RunJsonV01>(runDir.runJsonPath);
 
     runJson.startedAt = new Date().toISOString();
+    runJson.startTime = runJson.startedAt;
     runJson.cli.prdPath = prdPath;
     runJson.cli.resumeFrom = opts.resume ? path.resolve(opts.resume) : undefined;
     runJson.cli.sandbox = Boolean(opts.sandbox);
@@ -129,7 +130,9 @@ program
 
       runJson.stopReason = stopReason;
       runJson.exitCode = exitCode;
+      runJson.exitStatus = exitCode;
       runJson.finishedAt = new Date().toISOString();
+      runJson.endTime = runJson.finishedAt;
       await writeJson(runDir.runJsonPath, runJson);
 
       if (exitCode !== 0) {
@@ -148,8 +151,10 @@ program
       const e = err as Error;
       runJson.stopReason = stopReason;
       runJson.exitCode = exitCode;
+      runJson.exitStatus = exitCode;
       runJson.error = { message: e.message, stack: e.stack };
       runJson.finishedAt = new Date().toISOString();
+      runJson.endTime = runJson.finishedAt;
       await writeJson(runDir.runJsonPath, runJson);
 
       await writeDebugBundle({
