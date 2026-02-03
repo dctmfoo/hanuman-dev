@@ -40,6 +40,7 @@ export type RunJsonV01 = {
     schemaVersion: string;
     title: string;
     storyCount: number;
+    sha256?: string;
   };
   progress: {
     currentStoryIndex: number;

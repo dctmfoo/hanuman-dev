@@ -10,6 +10,8 @@ import { fetchBestEffort, getBranch, getHeadSha, isGitRepo, isWorktreeClean } fr
 import { getCodexFeaturesBestEffort, getCodexVersion } from './engines/codex.js';
 import { writeDebugBundle } from './run/debugBundle.js';
 import type { RunJsonV01, StopReason } from './run/types.js';
+import fs from 'node:fs/promises';
+import { sha256Hex } from './lib/hash.js';
 
 const program = new Command();
 
@@ -87,14 +89,31 @@ program
 
       await writeJson(runDir.runJsonPath, runJson);
 
-      const raw = await loadPrd(prdPath);
+      const prdRawText = await fs.readFile(prdPath, 'utf8');
+      const prdHash = sha256Hex(prdRawText);
+
+      // On resume, refuse to run against a different PRD than the one recorded.
+      if (opts.resume && runJson.prd?.sha256 && runJson.prd.sha256 !== prdHash) {
+        stopReason = 'VALIDATION_FAILED';
+        throw new Error(
+          `PRD mismatch on resume. run.json has sha256=${runJson.prd.sha256} but current file is sha256=${prdHash}. ` +
+            `Refusing to resume to preserve deterministic semantics.`
+        );
+      }
+
+      const raw = JSON.parse(prdRawText) as unknown;
       const v = validatePrdConservative(raw);
       if (!v.ok) {
         stopReason = 'VALIDATION_FAILED';
         throw new Error(v.error);
       }
 
-      runJson.prd = { schemaVersion: v.prd.schemaVersion, title: v.prd.title, storyCount: v.prd.stories.length };
+      runJson.prd = {
+        schemaVersion: v.prd.schemaVersion,
+        title: v.prd.title,
+        storyCount: v.prd.stories.length,
+        sha256: prdHash
+      };
       await writeJson(runDir.runJsonPath, runJson);
 
       const result = await runExecutor({ runDir, run: runJson, prd: v.prd, repoCwd: cwd });

@@ -16,6 +16,17 @@ export function validatePrdConservative(raw: unknown): ValidationResult {
     return { ok: false, error: `Too many stories for v0.1 (max 10). Got ${prd.stories.length}.` };
   }
 
+  // Enforce unique story IDs so resume semantics can't silently skip duplicated work.
+  const seen = new Set<string>();
+  const dupes = new Set<string>();
+  for (const s of prd.stories) {
+    if (seen.has(s.id)) dupes.add(s.id);
+    seen.add(s.id);
+  }
+  if (dupes.size) {
+    return { ok: false, error: `Duplicate story ids are not allowed: ${Array.from(dupes).join(', ')}` };
+  }
+
   const tooBig = prd.stories.filter((s) => s.size === 'L' || s.size === 'XL');
   if (tooBig.length) {
     return {
