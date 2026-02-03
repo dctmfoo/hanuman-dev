@@ -42,3 +42,9 @@ Automated compounding:
 - If a phase fails, transition to FAILED.
 - If input required, transition to NEEDS_HUMAN with a concrete question.
 - Resuming is deterministic from persisted state.
+
+## Todo/Fixme convention
+Use uppercase todo/fixme tags only in the following format so automation can find them:
+- `TODO(AR8-123): follow up on parser edge cases`
+- `FIXME(ops-42): handle missing HALO_HOME`
+The tag in parentheses should be an issue/story id or owner handle. Run `pnpm check:todo` to verify.
