@@ -73,29 +73,7 @@ program
 
       runJson.repo.path = cwd;
 
-      const isRepo = await isGitRepo(cwd);
-      if (!isRepo) {
-        stopReason = 'NOT_A_GIT_REPO';
-        throw new Error('Not a git repo');
-      }
-
-      const clean = await isWorktreeClean(cwd);
-      if (!clean) {
-        stopReason = 'DIRTY_WORKTREE';
-        throw new Error('Worktree is dirty');
-      }
-
-      runJson.repo.branch = await getBranch(cwd);
-      runJson.repo.headSha = await getHeadSha(cwd);
-      runJson.repo.fetch = await fetchBestEffort(cwd);
-
-      runJson.codex.version = await getCodexVersion(cwd);
-      runJson.codex.features = await getCodexFeaturesBestEffort(cwd);
-      if (!runJson.codex.version) runJson.codex.notes?.push('codex --version unavailable');
-      if (!runJson.codex.features) runJson.codex.notes?.push('codex features list unavailable (best-effort)');
-
-      await writeJson(runDir.runJsonPath, runJson);
-
+      // Validate PRD early (especially important on resume) before polluting run metadata.
       const prdRawText = await fs.readFile(prdPath, 'utf8');
       const prdHash = sha256Hex(prdRawText);
 
@@ -128,6 +106,30 @@ program
         storyCount: v.prd.stories.length,
         sha256: prdHash
       };
+      await writeJson(runDir.runJsonPath, runJson);
+
+      // Repo checks / metadata
+      const isRepo = await isGitRepo(cwd);
+      if (!isRepo) {
+        stopReason = 'NOT_A_GIT_REPO';
+        throw new Error('Not a git repo');
+      }
+
+      const clean = await isWorktreeClean(cwd);
+      if (!clean) {
+        stopReason = 'DIRTY_WORKTREE';
+        throw new Error('Worktree is dirty');
+      }
+
+      runJson.repo.branch = await getBranch(cwd);
+      runJson.repo.headSha = await getHeadSha(cwd);
+      runJson.repo.fetch = await fetchBestEffort(cwd);
+
+      runJson.codex.version = await getCodexVersion(cwd);
+      runJson.codex.features = await getCodexFeaturesBestEffort(cwd);
+      if (!runJson.codex.version) runJson.codex.notes?.push('codex --version unavailable');
+      if (!runJson.codex.features) runJson.codex.notes?.push('codex features list unavailable (best-effort)');
+
       await writeJson(runDir.runJsonPath, runJson);
 
       const result = await runExecutor({ runDir, run: runJson, prd: v.prd, repoCwd: cwd });

@@ -5,9 +5,22 @@ export async function ensureDir(p: string) {
   await fs.mkdir(p, { recursive: true });
 }
 
+/**
+ * Atomic JSON write: write to a temp file in the same directory then rename.
+ * This prevents partial/corrupt JSON when the process crashes mid-write.
+ */
+export async function atomicWriteJson(p: string, value: unknown) {
+  const dir = path.dirname(p);
+  await ensureDir(dir);
+  const tmp = `${p}.tmp-${process.pid}-${Date.now()}`;
+  const data = JSON.stringify(value, null, 2) + '\n';
+  await fs.writeFile(tmp, data, 'utf8');
+  await fs.rename(tmp, p);
+}
+
+/** Back-compat alias (prefer atomicWriteJson everywhere). */
 export async function writeJson(p: string, value: unknown) {
-  await ensureDir(path.dirname(p));
-  await fs.writeFile(p, JSON.stringify(value, null, 2) + '\n', 'utf8');
+  await atomicWriteJson(p, value);
 }
 
 export async function readJson<T>(p: string): Promise<T> {

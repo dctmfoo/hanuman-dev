@@ -59,7 +59,8 @@ export async function runExecutor(opts: {
         sandbox: opts.run.cli.sandbox,
         askForApproval: opts.run.cli.askForApproval,
         profile: opts.run.cli.profile,
-        configOverrides: opts.run.cli.configOverrides
+        configOverrides: opts.run.cli.configOverrides,
+        timeoutMs: 30 * 60 * 1000
       });
     } catch (e) {
       // Missing codex binary / spawn errors should be classified as engine errors.

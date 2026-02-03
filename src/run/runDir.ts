@@ -93,5 +93,10 @@ export async function loadRunDir(root: string): Promise<RunDir> {
   await ensureDir(rd.artifactsDir);
   await ensureDir(rd.debugBundleDir);
 
+  // Resume must be deterministic: checkpoint state must exist.
+  if (!(await fileExists(rd.checkpointStatePath))) {
+    throw new Error(`Not a resumable run dir: missing ${rd.checkpointStatePath}`);
+  }
+
   return rd;
 }

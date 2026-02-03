@@ -10,6 +10,8 @@ export type CodexExecOptions = {
   askForApproval: boolean;
   profile?: string;
   configOverrides: Record<string, string>;
+  /** Kill the Codex process if it runs longer than this. */
+  timeoutMs?: number;
 };
 
 export type CodexExecResult = {
@@ -94,6 +96,13 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
     // Buffer to avoid dropping JSON objects split across chunk boundaries.
     let carry = '';
 
+    const timeoutMs = opts.timeoutMs ?? 30 * 60 * 1000;
+    const timeout = setTimeout(() => {
+      // Best-effort kill; executor will map signal -> non-zero.
+      child.kill('SIGKILL');
+    }, timeoutMs);
+    timeout.unref?.();
+
     child.stdout.on('data', (d: Buffer) => {
       const text = d.toString();
       out.write(text);
@@ -121,11 +130,14 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
     });
 
     child.on('error', (err: Error) => {
+      clearTimeout(timeout);
       out.end();
       reject(err);
     });
 
     child.on('close', (code: number | null, signal: NodeJS.Signals | null) => {
+      clearTimeout(timeout);
+
       // flush any remaining buffered line (might contain the final JSON object)
       const t = carry.trim();
       if (t) {
