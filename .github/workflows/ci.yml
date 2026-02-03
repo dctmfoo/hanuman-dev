@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Secret Scan (gitleaks)
+        uses: gitleaks/gitleaks-action@v2
+        with:
+          config-path: .gitleaks.toml
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Readiness: Deadcode (knip)
+        run: pnpm check:deadcode
+
+      - name: Readiness: Complexity (eslint)
+        run: pnpm check:complexity
+
+      - name: Readiness: Duplication (jscpd)
+        run: pnpm check:dup
+
+      - name: Readiness: Todo Convention
+        run: pnpm check:todo
+
+      - name: Readiness: Docs Links
+        run: pnpm check:docs
+
+      - name: Test
+        run: pnpm test
+
+      - name: Build
+        run: pnpm build

@@ -34,17 +34,25 @@ This project is inspired by and builds on patterns and tooling from:
 We adapt these ideas to a repo-agnostic, multi-engine, multi-model workflow orchestrator.
 
 ## Docs
+- [Docs index](docs/README.md)
+- [Quickstart (v0.1)](docs/quickstart-v0.1.md) — canonical getting started path.
 - [Functional spec (v0.1)](docs/functional-spec-v0.1.md)
-- [Quickstart (v0.1)](docs/quickstart-v0.1.md)
 - [Architecture](docs/01-architecture.md)
 - [Workflow model](docs/02-workflow.md)
 - [Engine adapters](docs/03-engines.md)
 - [Repo config](docs/04-config.md)
 
-## Quickstart (v0.1)
+## Getting Started
 - See: [docs/quickstart-v0.1.md](docs/quickstart-v0.1.md)
 
-Fast sanity check (no Codex required):
+## Pre-commit hook (optional)
+
+Install a lightweight pre-commit hook that runs fast checks:
+
 ```bash
-./scripts/smoke-run.sh
+./scripts/dev/install-hooks.sh
 ```
+
+Opt-out options:
+- Temporarily skip once with `SKIP_PRE_COMMIT=1 git commit ...`
+- Remove the hook by deleting `.git/hooks/pre-commit`

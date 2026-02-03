@@ -4,3 +4,8 @@ dist/
 
 # local state
 /.halo/
+
+# local env overrides
+.env
+.env.*
+!.env.example

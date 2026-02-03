@@ -1,0 +1,15 @@
+{
+  "formats": ["typescript", "javascript"],
+  "reporters": ["console"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/docs/**",
+    "**/scripts/**",
+    "**/coverage/**",
+    "**/archive/**",
+    "**/reports/**",
+    "**/tasks/**",
+    "**/pnpm-lock.yaml"
+  ]
+}

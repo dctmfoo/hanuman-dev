@@ -9,6 +9,8 @@ import { loadPrd, runExecutor } from './executor/executor.js';
 import { fetchBestEffort, getBranch, getHeadSha, isGitRepo, isWorktreeClean } from './git/git.js';
 import { getCodexFeaturesBestEffort, getCodexVersion } from './engines/codex.js';
 import { writeDebugBundle } from './run/debugBundle.js';
+import { createRunLogger } from './run/logging.js';
+import { buildRunStatus, writeRunStatus } from './run/status.js';
 import type { RunJsonV01, StopReason } from './run/types.js';
 import fs from 'node:fs/promises';
 import { sha256Hex } from './lib/hash.js';
@@ -38,6 +40,38 @@ configCmd
     const { loadResolvedConfig } = await import('./config/config.js');
     const r = await loadResolvedConfig(process.cwd());
     console.log(JSON.stringify(r, null, 2));
+  });
+
+program
+  .command('status')
+  .description('Print status for a run directory.')
+  .argument('<runDir>', 'Path to a run directory')
+  .action(async (runDir) => {
+    const root = path.resolve(runDir);
+    const statusPath = path.join(root, 'status.json');
+
+    try {
+      const status = await readJson(statusPath);
+      console.log(JSON.stringify(status, null, 2));
+      return;
+    } catch {
+      // fall through to rebuild from run.json
+    }
+
+    try {
+      const rd = await loadRunDir(root);
+      const run = await readJson<RunJsonV01>(rd.runJsonPath);
+      const status = buildRunStatus({
+        runDir: rd,
+        run,
+        state: run.stopReason ? 'stopped' : 'running',
+        message: 'status reconstructed'
+      });
+      console.log(JSON.stringify(status, null, 2));
+    } catch (e) {
+      console.error(`hanuman-dev status failed: ${(e as Error).message}`);
+      process.exit(1);
+    }
   });
 
 program
@@ -103,6 +137,7 @@ program
     // Otherwise invalid --resume paths or malformed run.json will crash without stopReason/debug bundle.
     let runDir: Awaited<ReturnType<typeof createRunDir>> | undefined;
     let runJson: RunJsonV01 | undefined;
+    let log: ReturnType<typeof createRunLogger> | undefined;
 
     try {
       runDir = opts.resume
@@ -110,6 +145,9 @@ program
         : await createRunDir({ title: 'hanuman-dev-run', contractVersion: '0.1' });
 
       runJson = await readJson<RunJsonV01>(runDir.runJsonPath);
+      log = createRunLogger(runDir);
+      await log({ event: 'run.start', data: { prdPath, resume: Boolean(opts.resume) } });
+      await writeRunStatus({ runDir, run: runJson, state: 'initializing', message: 'initializing run' });
 
       runJson.startedAt = new Date().toISOString();
       runJson.startTime = runJson.startedAt;
@@ -156,6 +194,8 @@ program
         sha256: prdHash
       };
       await writeJson(runDir.runJsonPath, runJson);
+      await log({ event: 'run.prd.validated', data: { storyCount: v.prd.stories.length } });
+      await writeRunStatus({ runDir, run: runJson, state: 'running', message: 'validated PRD' });
 
       // Repo checks / metadata
       const isRepo = await isGitRepo(cwd);
@@ -180,6 +220,8 @@ program
       if (!runJson.codex.features) runJson.codex.notes?.push('codex features list unavailable (best-effort)');
 
       await writeJson(runDir.runJsonPath, runJson);
+      await log({ event: 'repo.validated', data: { branch: runJson.repo.branch, headSha: runJson.repo.headSha } });
+      await writeRunStatus({ runDir, run: runJson, state: 'running', message: 'starting executor' });
 
       const result = await runExecutor({ runDir, run: runJson, prd: v.prd, repoCwd: cwd });
       stopReason = result.stopReason;
@@ -196,6 +238,15 @@ program
       runJson.finishedAt = new Date().toISOString();
       runJson.endTime = runJson.finishedAt;
       await writeJson(runDir.runJsonPath, runJson);
+      await log({ event: 'run.stop', data: { stopReason, exitCode } });
+      await writeRunStatus({
+        runDir,
+        run: runJson,
+        state: 'stopped',
+        message: `stopped: ${stopReason}`,
+        stopReason,
+        exitStatus: exitCode
+      });
 
       if (exitCode !== 0) {
         await writeDebugBundle({
@@ -203,6 +254,7 @@ program
           run: runJson,
           repoCwd: cwd,
           eventsPath: runDir.eventsPath,
+          logsPath: runDir.logsPath,
           reason: 'executor failed'
         });
       }
@@ -236,12 +288,23 @@ program
       runJson.finishedAt = new Date().toISOString();
       runJson.endTime = runJson.finishedAt;
       await writeJson(runDir.runJsonPath, runJson);
+      if (!log) log = createRunLogger(runDir);
+      await log({ level: 'error', event: 'run.error', message: e.message, data: { stopReason, exitCode } });
+      await writeRunStatus({
+        runDir,
+        run: runJson,
+        state: 'stopped',
+        message: `failed: ${stopReason}`,
+        stopReason,
+        exitStatus: exitCode
+      });
 
       await writeDebugBundle({
         debugDir: runDir.debugBundleDir,
         run: runJson,
         repoCwd: cwd,
         eventsPath: runDir.eventsPath,
+        logsPath: runDir.logsPath,
         reason: e.message
       });
 

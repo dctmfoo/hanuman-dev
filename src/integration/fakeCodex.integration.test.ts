@@ -52,6 +52,14 @@ describe('integration: executor with fake codex', () => {
 
     const events = await fs.readFile(runDir.eventsPath, 'utf8');
     expect(events.length).toBeGreaterThan(0);
+
+    const logs = await fs.readFile(runDir.logsPath, 'utf8');
+    expect(logs.trim().length).toBeGreaterThan(0);
+
+    const status = JSON.parse(await fs.readFile(runDir.statusPath, 'utf8'));
+    expect(status.state).toBe('stopped');
+    expect(status.stopReason).toBe('SUCCESS');
+    expect(status.progress.completed).toBe(2);
   });
 
   it('resumes from nextStoryId without rerunning completed stories', async () => {

@@ -82,3 +82,32 @@ export type CheckpointStateV01 = {
 
   updatedAt: string;
 };
+
+export type RunStatusState = 'initializing' | 'running' | 'stopped';
+
+export type RunStatusV01 = {
+  contractVersion: '0.1';
+  runId: string;
+  updatedAt: string;
+  state: RunStatusState;
+  stopReason?: StopReason;
+  exitStatus?: number;
+  message?: string;
+  progress: {
+    completed: number;
+    total?: number;
+    nextStoryId?: string | null;
+    currentStoryId?: string | null;
+    currentStoryIndex?: number;
+  };
+  paths: {
+    runDir: string;
+    runJsonPath: string;
+    statusPath: string;
+    eventsPath: string;
+    logsPath: string;
+    artifactsDir: string;
+    checkpointsDir: string;
+    debugBundleDir: string;
+  };
+};

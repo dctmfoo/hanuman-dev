@@ -65,6 +65,8 @@ echo "Run dir: $RUN_DIR"
 [[ -d "$RUN_DIR" ]] || (echo "missing run dir" && exit 1)
 [[ -f "$RUN_DIR/run.json" ]] || (echo "missing run.json" && exit 1)
 [[ -f "$RUN_DIR/events.jsonl" ]] || (echo "missing events.jsonl" && exit 1)
+[[ -f "$RUN_DIR/logs.jsonl" ]] || (echo "missing logs.jsonl" && exit 1)
+[[ -f "$RUN_DIR/status.json" ]] || (echo "missing status.json" && exit 1)
 [[ -f "$RUN_DIR/checkpoints/state.json" ]] || (echo "missing checkpoint state" && exit 1)
 [[ -d "$RUN_DIR/artifacts" ]] || (echo "missing artifacts dir" && exit 1)
 [[ -d "$RUN_DIR/debug_bundle" ]] || (echo "missing debug_bundle dir" && exit 1)
@@ -81,5 +83,6 @@ NODE
 
 # events.jsonl must not be empty
 [[ -s "$RUN_DIR/events.jsonl" ]] || (echo "events.jsonl is empty" && exit 1)
+[[ -s "$RUN_DIR/logs.jsonl" ]] || (echo "logs.jsonl is empty" && exit 1)
 
 echo "SMOKE_OK"

@@ -21,6 +21,14 @@ pnpm build
 node dist/cli.js --help
 ```
 
+### Dev container (optional)
+
+This repo includes `.devcontainer/devcontainer.json` for a reproducible Node + pnpm setup.
+
+1. Install the VS Code Dev Containers extension.
+2. Open the repo in VS Code and run `Dev Containers: Reopen in Container`.
+3. The container runs `pnpm install` on first create; then use the usual `pnpm build` and `pnpm test`.
+
 ## Run a tiny PRD
 
 Create a `prd.json` (v0.1 schema):
@@ -49,6 +57,39 @@ export HALO_HOME="$HOME/.halo"
 node /path/to/hanuman-dev/dist/cli.js run --prd /path/to/prd.json --sandbox
 ```
 
+## Agent-Readiness Template
+
+If you are running agent-readiness work across multiple repos, start from the master template:
+
+```bash
+cp docs/templates/agent-readiness/prd.template.json /path/to/target-repo/prd.json
+```
+
+Then update the copied file:
+- Set `title` and `repo`.
+- Replace the placeholder story with your repo-specific stories.
+- Keep stories sized `S` or `M` for v0.1 validation.
+
+### Relevance Convention (No Runner Changes)
+
+Use an optional `relevance` object on each story to capture why the story matters:
+
+```json
+{
+  "id": "AR01-example",
+  "title": "Document the agent-readiness PRD template",
+  "size": "S",
+  "acceptance": ["Docs explain how to copy the template"],
+  "relevance": {
+    "tags": ["readiness", "docs"],
+    "notes": "Why this story matters for agent readiness."
+  }
+}
+```
+
+`relevance.tags` should be short, kebab-case labels. `relevance.notes` should be a single sentence.
+This metadata is for humans; the v0.1 executor ignores unknown fields, so no runner changes are needed.
+
 ### What gets created
 
 Each run creates a run directory:
@@ -57,9 +98,46 @@ Each run creates a run directory:
 $HALO_HOME/runs/<runId>/
   run.json
   events.jsonl
+  logs.jsonl
+  status.json
   checkpoints/state.json
   artifacts/
   debug_bundle/
+```
+
+### Logs and status
+
+`events.jsonl` is the raw Codex JSONL stream. `logs.jsonl` is hanuman-dev's structured log stream.
+`status.json` is a small, frequently updated health snapshot for the run.
+
+Tail logs:
+
+```bash
+tail -f "$HALO_HOME/runs/<runId>/logs.jsonl"
+```
+
+Example log line:
+
+```json
+{"ts":"2026-02-03T12:00:00.000Z","level":"info","event":"story.start","runId":"...","data":{"storyId":"S1","index":0}}
+```
+
+Check status:
+
+```bash
+cat "$HALO_HOME/runs/<runId>/status.json"
+```
+
+Or use the CLI helper:
+
+```bash
+hanuman-dev status "$HALO_HOME/runs/<runId>"
+```
+
+For the raw Codex event stream:
+
+```bash
+tail -f "$HALO_HOME/runs/<runId>/events.jsonl"
 ```
 
 ### Resume
