@@ -1,0 +1,13 @@
+{
+  "name": "hanuman-dev",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "remoteUser": "node",
+  "postCreateCommand": "corepack enable && pnpm install",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint"
+      ]
+    }
+  }
+}

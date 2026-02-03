@@ -49,6 +49,13 @@ Fast sanity check (no Codex required):
 ./scripts/smoke-run.sh
 ```
 
+## Dev Container (optional)
+This repo includes `.devcontainer/devcontainer.json` for a reproducible Node + pnpm environment.
+
+1. Install the VS Code Dev Containers extension.
+2. Open the repo in VS Code and run `Dev Containers: Reopen in Container`.
+3. The container runs `pnpm install` on first create; then use the usual `pnpm build` and `pnpm test`.
+
 ## Pre-commit hook (optional)
 
 Install a lightweight pre-commit hook that runs fast checks:

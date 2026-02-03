@@ -21,6 +21,14 @@ pnpm build
 node dist/cli.js --help
 ```
 
+### Dev container (optional)
+
+This repo includes `.devcontainer/devcontainer.json` for a reproducible Node + pnpm setup.
+
+1. Install the VS Code Dev Containers extension.
+2. Open the repo in VS Code and run `Dev Containers: Reopen in Container`.
+3. The container runs `pnpm install` on first create; then use the usual `pnpm build` and `pnpm test`.
+
 ## Run a tiny PRD
 
 Create a `prd.json` (v0.1 schema):
