@@ -136,6 +136,11 @@ program
       stopReason = result.stopReason;
       exitCode = result.exitCode;
 
+      // Preserve executor-captured error details (engine failures, invalid output, etc.)
+      if (result.run.error) {
+        runJson.error = result.run.error;
+      }
+
       runJson.stopReason = stopReason;
       runJson.exitCode = exitCode;
       runJson.exitStatus = exitCode;

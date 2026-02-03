@@ -90,6 +90,12 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
     });
 
     const out = fs.createWriteStream(opts.eventsPath, { flags: 'a' });
+    out.on('error', (err) => {
+      // Keep failures inside the executor error path.
+      clearTimeout(timeout);
+      reject(err);
+    });
+
     let stderr = '';
     let lastJson: unknown | undefined;
 
