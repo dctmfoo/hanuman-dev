@@ -12,6 +12,7 @@ This folder contains reference docs for hanuman-dev.
 - [Repo config](04-config.md) — `.halo/config.json` shape and usage.
 - [Status and roadmap](05-status-and-roadmap.md) — project status and forward-looking work.
 - [Claude adapter spec](06-roadmap-c-claude-adapter-spec.md) — adapter roadmap/spec details.
+- [Branch protection](07-branch-protection.md) — required rulesets/branch protection for the repo.
 - [Functional spec (v0.1)](functional-spec-v0.1.md) — end-to-end behavior and goals.
 - [PRD (v0.1)](prd-v0.1.md) — requirements and scope.
 
