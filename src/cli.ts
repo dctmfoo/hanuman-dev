@@ -48,25 +48,31 @@ program
     }
 
     const prdPath = path.resolve(opts.prd);
-
-    const runDir = opts.resume
-      ? await loadRunDir(path.resolve(opts.resume))
-      : await createRunDir({ title: 'hanuman-dev-run', contractVersion: '0.1' });
-    const runJson = await readJson<RunJsonV01>(runDir.runJsonPath);
-
-    runJson.startedAt = new Date().toISOString();
-    runJson.startTime = runJson.startedAt;
-    runJson.cli.prdPath = prdPath;
-    runJson.cli.resumeFrom = opts.resume ? path.resolve(opts.resume) : undefined;
-    runJson.cli.sandbox = Boolean(opts.sandbox);
-    runJson.cli.askForApproval = Boolean(opts.askForApproval);
-    runJson.cli.profile = opts.profile;
-    runJson.cli.configOverrides = configOverrides;
-
     const cwd = process.cwd();
-    runJson.repo.path = cwd;
+
+    // NOTE: init (create/load run dir + read run.json) must be inside the try.
+    // Otherwise invalid --resume paths or malformed run.json will crash without stopReason/debug bundle.
+    let runDir: Awaited<ReturnType<typeof createRunDir>> | undefined;
+    let runJson: RunJsonV01 | undefined;
 
     try {
+      runDir = opts.resume
+        ? await loadRunDir(path.resolve(opts.resume))
+        : await createRunDir({ title: 'hanuman-dev-run', contractVersion: '0.1' });
+
+      runJson = await readJson<RunJsonV01>(runDir.runJsonPath);
+
+      runJson.startedAt = new Date().toISOString();
+      runJson.startTime = runJson.startedAt;
+      runJson.cli.prdPath = prdPath;
+      runJson.cli.resumeFrom = opts.resume ? path.resolve(opts.resume) : undefined;
+      runJson.cli.sandbox = Boolean(opts.sandbox);
+      runJson.cli.askForApproval = Boolean(opts.askForApproval);
+      runJson.cli.profile = opts.profile;
+      runJson.cli.configOverrides = configOverrides;
+
+      runJson.repo.path = cwd;
+
       const isRepo = await isGitRepo(cwd);
       if (!isRepo) {
         stopReason = 'NOT_A_GIT_REPO';
@@ -149,6 +155,24 @@ program
       process.exit(exitCode);
     } catch (err) {
       const e = err as Error;
+
+      // If init failed before we had a valid run dir, create a fallback run dir so we can
+      // still honor the v0.1 contract (explicit stopReason + debug bundle).
+      if (!runDir || !runJson) {
+        stopReason = stopReason === 'UNKNOWN_ERROR' ? 'VALIDATION_FAILED' : stopReason;
+        runDir = await createRunDir({ title: 'hanuman-dev-init-failure', contractVersion: '0.1' });
+        runJson = await readJson<RunJsonV01>(runDir.runJsonPath);
+        runJson.repo.path = cwd;
+        runJson.startedAt = runJson.startedAt ?? new Date().toISOString();
+        runJson.startTime = runJson.startTime ?? runJson.startedAt;
+        runJson.cli.prdPath = prdPath;
+        runJson.cli.resumeFrom = opts.resume ? path.resolve(opts.resume) : undefined;
+        runJson.cli.sandbox = Boolean(opts.sandbox);
+        runJson.cli.askForApproval = Boolean(opts.askForApproval);
+        runJson.cli.profile = opts.profile;
+        runJson.cli.configOverrides = configOverrides;
+      }
+
       runJson.stopReason = stopReason;
       runJson.exitCode = exitCode;
       runJson.exitStatus = exitCode;
