@@ -208,8 +208,11 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
       // If terminated by signal, treat as non-zero (abort/failure) so the executor can generate debug bundles.
       const finalCode = code === null ? 1 : code;
 
-      // Prefer the explicit last-message file if it exists and parses, else fall back to agent_message JSON.
+      // Prefer the explicit last-message file if it exists and parses.
+      // Only fall back to agent_message JSON when the last-message file is missing/unreadable.
       let finalOutput: unknown = lastJson;
+      let usedLastMessageFile = false;
+
       try {
         // lastMessagePath is included in args as '-o <path>'
         const idx = args.findIndex((a) => a === '-o' || a === '--output-last-message');
@@ -217,6 +220,7 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
         if (p) {
           const raw = fs.readFileSync(p, 'utf8').trim();
           if (raw) {
+            usedLastMessageFile = true;
             try {
               finalOutput = JSON.parse(raw);
             } catch {
@@ -229,7 +233,7 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
         // ignore
       }
 
-      if (lastAgentJson) finalOutput = lastAgentJson;
+      if (!usedLastMessageFile && lastAgentJson) finalOutput = lastAgentJson;
 
       resolve({ code: finalCode, signal: signal ?? undefined, lastOutputJson: finalOutput, stderrTail: stderr });
     });
