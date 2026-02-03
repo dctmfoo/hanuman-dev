@@ -14,6 +14,7 @@ export type CodexExecOptions = {
 
 export type CodexExecResult = {
   code: number;
+  signal?: NodeJS.Signals;
   lastOutputJson?: unknown;
   stderrTail?: string;
 };
@@ -85,13 +86,20 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
     let stderr = '';
     let lastJson: unknown | undefined;
 
+    // Buffer to avoid dropping JSON objects split across chunk boundaries.
+    let carry = '';
+
     child.stdout.on('data', (d: Buffer) => {
       const text = d.toString();
       out.write(text);
 
-      // best-effort parse: last JSON object line as "final" output
-      // (codex event stream is JSONL; some lines may be non-JSON)
-      for (const line of text.split('\n')) {
+      // best-effort parse: keep the last parseable JSON line as "final" output.
+      // Codex event stream is JSONL; some lines may be non-JSON.
+      const combined = carry + text;
+      const parts = combined.split('\n');
+      carry = parts.pop() ?? '';
+
+      for (const line of parts) {
         const t = line.trim();
         if (!t) continue;
         try {
@@ -112,9 +120,22 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
       reject(err);
     });
 
-    child.on('close', (code: number | null) => {
+    child.on('close', (code: number | null, signal: NodeJS.Signals | null) => {
+      // flush any remaining buffered line (might contain the final JSON object)
+      const t = carry.trim();
+      if (t) {
+        try {
+          lastJson = JSON.parse(t);
+        } catch {
+          // ignore
+        }
+      }
+
       out.end();
-      resolve({ code: code ?? 0, lastOutputJson: lastJson, stderrTail: stderr });
+
+      // If terminated by signal, treat as non-zero (abort/failure) so the executor can generate debug bundles.
+      const finalCode = code === null ? 1 : code;
+      resolve({ code: finalCode, signal: signal ?? undefined, lastOutputJson: lastJson, stderrTail: stderr });
     });
   });
 }
