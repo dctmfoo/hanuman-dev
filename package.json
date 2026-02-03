@@ -19,7 +19,8 @@
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
     "check:deadcode": "knip",
-    "check:complexity": "eslint \"src/**/*.{ts,tsx}\""
+    "check:complexity": "eslint \"src/**/*.{ts,tsx}\"",
+    "check:dup": "pnpm dlx jscpd --config .jscpd.json"
   },
   "dependencies": {
     "commander": "^12.1.0",
