@@ -91,6 +91,37 @@ describe('integration: executor with fake codex', () => {
     expect(artifacts.some((f) => f.includes('S2'))).toBe(true);
   });
 
+  it('migrates legacy index-only checkpoint (empty completedStoryIds) using currentStoryIndex', async () => {
+    process.env.HANUMAN_FAKE_CODEX_SCENARIO = 'ok';
+
+    const repoCwd = await makeTempRepo();
+    const runDir = await createRunDir({ title: 'itest', contractVersion: '0.1' });
+
+    const run: RunJsonV01 = {
+      ...(await (await import('../lib/fs.js')).readJson<RunJsonV01>(runDir.runJsonPath)),
+      cli: { argv: [], sandbox: false, askForApproval: false, configOverrides: {} },
+      repo: { path: repoCwd }
+    };
+    await writeJson(runDir.runJsonPath, run);
+
+    // Legacy: only index tracked, completedStoryIds empty.
+    await writeJson(runDir.checkpointStatePath, {
+      contractVersion: '0.1',
+      runId: runDir.runId,
+      currentStoryIndex: 1,
+      completedStoryIds: [],
+      updatedAt: new Date().toISOString()
+    });
+
+    const res = await runExecutor({ runDir, run, prd: prd as any, repoCwd, engine: FakeCodexEngine });
+    expect(res.stopReason).toBe('SUCCESS');
+
+    const artifacts = await fs.readdir(runDir.artifactsDir);
+    // should execute only S2 (index=1), not S1
+    expect(artifacts.some((f) => f.includes('S1'))).toBe(false);
+    expect(artifacts.some((f) => f.includes('S2'))).toBe(true);
+  });
+
   it('fails when fake codex emits no machine-checkable output', async () => {
     process.env.HANUMAN_FAKE_CODEX_SCENARIO = 'no-json';
 

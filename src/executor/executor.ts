@@ -32,10 +32,23 @@ export async function runExecutor(opts: {
   };
 
   // Migrate old checkpoints (index-based) to nextStoryId for deterministic resume.
+  // Older checkpoints may have only currentStoryIndex with stale/empty completedStoryIds.
   if (state.nextStoryId === undefined) {
-    state.nextStoryId = computeNextStoryId();
+    if (state.completedStoryIds.length === 0 && state.currentStoryIndex > 0) {
+      // Best-effort migration: assume stories before currentStoryIndex were completed.
+      const assumedCompleted = opts.prd.stories.slice(0, state.currentStoryIndex).map((s) => s.id);
+      for (const id of assumedCompleted) completed.add(id);
+      state.completedStoryIds = Array.from(completed);
+      state.nextStoryId = opts.prd.stories[state.currentStoryIndex]?.id ?? null;
+    } else {
+      state.nextStoryId = computeNextStoryId();
+    }
+
     // best-effort index mirror
-    state.currentStoryIndex = Math.max(0, opts.prd.stories.findIndex((s) => s.id === state.nextStoryId));
+    state.currentStoryIndex = state.nextStoryId
+      ? Math.max(0, opts.prd.stories.findIndex((s) => s.id === state.nextStoryId))
+      : opts.prd.stories.length;
+
     await saveCheckpointState(opts.runDir.checkpointStatePath, state);
   }
 
