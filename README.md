@@ -48,3 +48,15 @@ Fast sanity check (no Codex required):
 ```bash
 ./scripts/smoke-run.sh
 ```
+
+## Pre-commit hook (optional)
+
+Install a lightweight pre-commit hook that runs fast checks:
+
+```bash
+./scripts/dev/install-hooks.sh
+```
+
+Opt-out options:
+- Temporarily skip once with `SKIP_PRE_COMMIT=1 git commit ...`
+- Remove the hook by deleting `.git/hooks/pre-commit`
