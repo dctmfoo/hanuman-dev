@@ -34,27 +34,16 @@ This project is inspired by and builds on patterns and tooling from:
 We adapt these ideas to a repo-agnostic, multi-engine, multi-model workflow orchestrator.
 
 ## Docs
+- [Docs index](docs/README.md)
+- [Quickstart (v0.1)](docs/quickstart-v0.1.md) — canonical getting started path.
 - [Functional spec (v0.1)](docs/functional-spec-v0.1.md)
-- [Quickstart (v0.1)](docs/quickstart-v0.1.md)
 - [Architecture](docs/01-architecture.md)
 - [Workflow model](docs/02-workflow.md)
 - [Engine adapters](docs/03-engines.md)
 - [Repo config](docs/04-config.md)
 
-## Quickstart (v0.1)
+## Getting Started
 - See: [docs/quickstart-v0.1.md](docs/quickstart-v0.1.md)
-
-Fast sanity check (no Codex required):
-```bash
-./scripts/smoke-run.sh
-```
-
-## Dev Container (optional)
-This repo includes `.devcontainer/devcontainer.json` for a reproducible Node + pnpm environment.
-
-1. Install the VS Code Dev Containers extension.
-2. Open the repo in VS Code and run `Dev Containers: Reopen in Container`.
-3. The container runs `pnpm install` on first create; then use the usual `pnpm build` and `pnpm test`.
 
 ## Pre-commit hook (optional)
 
