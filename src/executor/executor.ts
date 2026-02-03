@@ -4,6 +4,8 @@ import { readJson, writeJson } from '../lib/fs.js';
 import type { RunDir } from '../run/runDir.js';
 import type { RunJsonV01, StopReason } from '../run/types.js';
 import { loadCheckpointState, saveCheckpointState } from '../run/checkpoints.js';
+import { createRunLogger } from '../run/logging.js';
+import { writeRunStatus } from '../run/status.js';
 import { codexExecJsonl } from '../engines/codex.js';
 import { FakeCodexEngine } from '../engines/fakeCodex.js';
 import type { Engine } from '../engines/types.js';
@@ -16,12 +18,15 @@ export async function runExecutor(opts: {
   repoCwd: string;
   engine?: Engine;
 }): Promise<{ stopReason: StopReason; exitCode: number; run: RunJsonV01 }> {
+  const log = createRunLogger(opts.runDir);
   const state = await loadCheckpointState(opts.runDir.checkpointStatePath);
 
   const engine: Engine =
     opts.engine ?? (process.env.HANUMAN_ENGINE === 'fake-codex' ? FakeCodexEngine : { name: 'codex', execJsonl: codexExecJsonl });
 
   const completed = new Set(state.completedStoryIds);
+
+  await log({ event: 'executor.start', data: { storyCount: opts.prd.stories.length, engine: engine.name } });
 
   // Determine next story based on identity, not array index.
   const computeNextStoryId = (): string | null => {
@@ -59,6 +64,7 @@ export async function runExecutor(opts: {
     ? Math.max(0, opts.prd.stories.findIndex((s) => s.id === opts.run.progress.nextStoryId))
     : opts.prd.stories.length;
   await writeJson(opts.runDir.runJsonPath, opts.run);
+  await writeRunStatus({ runDir: opts.runDir, run: opts.run, state: 'running', message: 'executor started' });
 
   // Always compute the next story dynamically from completed story IDs.
   for (;;) {
@@ -66,7 +72,23 @@ export async function runExecutor(opts: {
     if (!nextId) break;
 
     const idx = opts.prd.stories.findIndex((s) => s.id === nextId);
-    if (idx < 0) return { stopReason: 'VALIDATION_FAILED', exitCode: 1, run: opts.run };
+    if (idx < 0) {
+      await log({
+        level: 'error',
+        event: 'executor.stop',
+        message: 'next story id not found in PRD',
+        data: { stopReason: 'VALIDATION_FAILED', exitCode: 1, nextStoryId: nextId }
+      });
+      await writeRunStatus({
+        runDir: opts.runDir,
+        run: opts.run,
+        state: 'stopped',
+        message: 'next story id not found in PRD',
+        stopReason: 'VALIDATION_FAILED',
+        exitStatus: 1
+      });
+      return { stopReason: 'VALIDATION_FAILED', exitCode: 1, run: opts.run };
+    }
 
     const story = opts.prd.stories[idx];
 
@@ -76,6 +98,15 @@ export async function runExecutor(opts: {
       currentStoryIndex: idx,
       completedStoryIds: Array.from(completed),
       nextStoryId: story.id
+    });
+
+    await log({ event: 'story.start', data: { storyId: story.id, index: idx } });
+    await writeRunStatus({
+      runDir: opts.runDir,
+      run: opts.run,
+      state: 'running',
+      message: `running story ${story.id}`,
+      currentStoryId: story.id
     });
 
     const outputSchema = {
@@ -109,14 +140,25 @@ export async function runExecutor(opts: {
       });
     } catch (e) {
       // Missing codex binary / spawn errors should be classified as engine errors.
-      return {
-        stopReason: 'ENGINE_ERROR',
-        exitCode: 1,
-        run: {
-          ...opts.run,
-          error: { message: (e as Error).message, stack: (e as Error).stack }
-        }
+      const run = {
+        ...opts.run,
+        error: { message: (e as Error).message, stack: (e as Error).stack }
       };
+      await log({
+        level: 'error',
+        event: 'executor.stop',
+        message: 'engine execution failed to start',
+        data: { stopReason: 'ENGINE_ERROR', exitCode: 1 }
+      });
+      await writeRunStatus({
+        runDir: opts.runDir,
+        run,
+        state: 'stopped',
+        message: 'engine execution failed to start',
+        stopReason: 'ENGINE_ERROR',
+        exitStatus: 1
+      });
+      return { stopReason: 'ENGINE_ERROR', exitCode: 1, run };
     }
 
     // Persist per-story artifact
@@ -130,7 +172,22 @@ export async function runExecutor(opts: {
     });
 
     if (r.code !== 0) {
-      return { stopReason: 'ENGINE_ERROR', exitCode: r.code || 1, run: opts.run };
+      const exitCode = r.code || 1;
+      await log({
+        level: 'error',
+        event: 'executor.stop',
+        message: 'engine returned non-zero exit code',
+        data: { stopReason: 'ENGINE_ERROR', exitCode }
+      });
+      await writeRunStatus({
+        runDir: opts.runDir,
+        run: opts.run,
+        state: 'stopped',
+        message: 'engine returned non-zero exit code',
+        stopReason: 'ENGINE_ERROR',
+        exitStatus: exitCode
+      });
+      return { stopReason: 'ENGINE_ERROR', exitCode, run: opts.run };
     }
 
     // Enforce machine-checkable output per step (v0.1): must have a parseable final output.
@@ -141,15 +198,31 @@ export async function runExecutor(opts: {
       typeof out.summary === 'string' &&
       (out.status === 'ok' || out.status === 'needs_human' || out.status === 'failed');
     if (!ok) {
-      return {
-        stopReason: 'ENGINE_ERROR',
-        exitCode: 1,
-        run: {
-          ...opts.run,
-          error: { message: 'Codex produced no valid JSON output matching the expected schema.' }
-        }
+      const run = {
+        ...opts.run,
+        error: { message: 'Codex produced no valid JSON output matching the expected schema.' }
       };
+      await log({
+        level: 'error',
+        event: 'executor.stop',
+        message: 'engine produced invalid JSON output',
+        data: { stopReason: 'ENGINE_ERROR', exitCode: 1 }
+      });
+      await writeRunStatus({
+        runDir: opts.runDir,
+        run,
+        state: 'stopped',
+        message: 'engine produced invalid JSON output',
+        stopReason: 'ENGINE_ERROR',
+        exitStatus: 1
+      });
+      return { stopReason: 'ENGINE_ERROR', exitCode: 1, run };
     }
+
+    await log({
+      event: 'story.finish',
+      data: { storyId: story.id, index: idx, exitCode: r.code, status: out?.status }
+    });
 
     completed.add(story.id);
     state.completedStoryIds = Array.from(completed);
@@ -165,6 +238,13 @@ export async function runExecutor(opts: {
     opts.run.progress.nextStoryId = state.nextStoryId;
     opts.run.progress.currentStoryIndex = state.currentStoryIndex;
     await writeJson(opts.runDir.runJsonPath, opts.run);
+
+    await writeRunStatus({
+      runDir: opts.runDir,
+      run: opts.run,
+      state: 'running',
+      message: `completed story ${story.id}`
+    });
   }
 
   // mark finished
@@ -180,6 +260,19 @@ export async function runExecutor(opts: {
 
   // Write simple completion artifact
   await fs.writeFile(path.join(opts.runDir.artifactsDir, 'completed.txt'), 'completed\n', 'utf8');
+
+  await log({
+    event: 'executor.stop',
+    data: { stopReason: 'SUCCESS', exitCode: 0 }
+  });
+  await writeRunStatus({
+    runDir: opts.runDir,
+    run: opts.run,
+    state: 'stopped',
+    message: 'executor complete',
+    stopReason: 'SUCCESS',
+    exitStatus: 0
+  });
 
   return { stopReason: 'SUCCESS', exitCode: 0, run: opts.run };
 }

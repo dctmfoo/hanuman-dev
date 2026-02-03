@@ -5,7 +5,7 @@
 ## Context
 
 We have a working v0.1 Codex-first executor with:
-- run-dir contract (`run.json`, `events.jsonl`, `checkpoints/`, `artifacts/`, `debug_bundle/`)
+- run-dir contract (`run.json`, `events.jsonl`, `logs.jsonl`, `status.json`, `checkpoints/`, `artifacts/`, `debug_bundle/`)
 - deterministic resume (`nextStoryId`)
 - working Codex adapter for **codex-cli 0.94.0**
 - repo-local config (`.halo/hanuman-dev.json`) and stage config plumbing for `stages.work`

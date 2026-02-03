@@ -32,6 +32,8 @@ Every run writes to a new directory:
 <HALO_HOME>/runs/<runId>/
   run.json
   events.jsonl
+  logs.jsonl
+  status.json
   checkpoints/
   artifacts/
   debug_bundle/
@@ -48,6 +50,8 @@ Every run writes to a new directory:
 - stopReason + exitStatus
 
 `events.jsonl` MUST be the raw JSONL stream from `codex exec --json` (append-only).
+`logs.jsonl` MUST be structured JSONL emitted by hanuman-dev (levels + event names).
+`status.json` MUST be a small, frequently updated status snapshot.
 
 ### R2. Codex-first execution via new CLI primitives
 Executor uses Codex CLI with:
@@ -74,6 +78,7 @@ On failure, write `debug_bundle/` with:
 - `summary.md`
 - `run.json` snapshot
 - last N lines of `events.jsonl`
+- last N lines of `logs.jsonl` (when available)
 - `git-status.txt`, `git-diff.patch` (best-effort)
 
 ### R6. Story sizing validation (conservative)

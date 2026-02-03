@@ -90,6 +90,7 @@ On failure, the run directory contains `debug_bundle/` with:
 - summary
 - run.json snapshot
 - tail of Codex events
+- tail of executor logs (if available)
 - git status + diff (best effort)
 
 ---
@@ -102,6 +103,8 @@ A run directory must contain:
 <HALO_HOME>/runs/<runId>/
   run.json
   events.jsonl
+  logs.jsonl
+  status.json
   checkpoints/
     state.json
   artifacts/
@@ -137,6 +140,17 @@ Per-story outputs that summarize Codex result for that story.
 
 ### 4.5 debug_bundle/
 Failure-only bundle for rapid diagnosis.
+
+### 4.6 logs.jsonl
+Structured JSONL log lines emitted by hanuman-dev. Each line is a JSON object with:
+- `ts` (ISO timestamp)
+- `level` (`info|warn|error`)
+- `event` (dot-delimited event name)
+- `runId`
+- optional `message` and `data`
+
+### 4.7 status.json
+A small, frequently updated status snapshot for the run, including progress and log paths.
 
 ---
 

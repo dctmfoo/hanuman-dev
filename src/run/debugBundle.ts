@@ -9,6 +9,7 @@ export async function writeDebugBundle(opts: {
   run: RunJsonV01;
   repoCwd: string;
   eventsPath: string;
+  logsPath?: string;
   reason: string;
 }) {
   await ensureDir(opts.debugDir);
@@ -44,6 +45,17 @@ export async function writeDebugBundle(opts: {
       `failed to read events: ${(e as Error).message}\n`,
       'utf8'
     );
+  }
+
+  if (opts.logsPath) {
+    try {
+      const raw = await fs.readFile(opts.logsPath, 'utf8');
+      const lines = raw.trim().split('\n');
+      const tail = lines.slice(Math.max(0, lines.length - 200)).join('\n');
+      await fs.writeFile(path.join(opts.debugDir, 'logs-tail.jsonl'), tail + (tail ? '\n' : ''), 'utf8');
+    } catch (e) {
+      await fs.writeFile(path.join(opts.debugDir, 'logs-tail.jsonl'), `failed to read logs: ${(e as Error).message}\n`, 'utf8');
+    }
   }
 
   const summary = `# Debug bundle\n\nReason: ${opts.reason}\nStopReason: ${opts.run.stopReason ?? 'unknown'}\nRun: ${opts.run.runId}\nCreated: ${opts.run.createdAt}\n`;

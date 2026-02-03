@@ -3,6 +3,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import { ensureDir, fileExists, readJson, writeJson } from '../lib/fs.js';
 import { getHaloHome, slugify } from '../lib/paths.js';
+import { writeRunStatus } from './status.js';
 import type { CheckpointStateV01, RunJsonV01 } from './types.js';
 
 export type RunDir = {
@@ -10,6 +11,8 @@ export type RunDir = {
   root: string;
   runJsonPath: string;
   eventsPath: string;
+  logsPath: string;
+  statusPath: string;
   checkpointsDir: string;
   artifactsDir: string;
   debugBundleDir: string;
@@ -31,6 +34,8 @@ export async function createRunDir(params: { title?: string; contractVersion: '0
     root,
     runJsonPath: path.join(root, 'run.json'),
     eventsPath: path.join(root, 'events.jsonl'),
+    logsPath: path.join(root, 'logs.jsonl'),
+    statusPath: path.join(root, 'status.json'),
     checkpointsDir: path.join(root, 'checkpoints'),
     artifactsDir: path.join(root, 'artifacts'),
     debugBundleDir: path.join(root, 'debug_bundle'),
@@ -42,6 +47,7 @@ export async function createRunDir(params: { title?: string; contractVersion: '0
   await ensureDir(rd.artifactsDir);
   await ensureDir(rd.debugBundleDir);
   await fs.writeFile(rd.eventsPath, '', { encoding: 'utf8' });
+  await fs.writeFile(rd.logsPath, '', { encoding: 'utf8' });
 
   const initRun: RunJsonV01 = {
     contractVersion: params.contractVersion,
@@ -69,6 +75,7 @@ export async function createRunDir(params: { title?: string; contractVersion: '0
     updatedAt: new Date().toISOString()
   };
   await writeJson(rd.checkpointStatePath, cp);
+  await writeRunStatus({ runDir: rd, run: initRun, state: 'initializing', message: 'run directory created' });
 
   return rd;
 }
@@ -83,6 +90,8 @@ export async function loadRunDir(root: string): Promise<RunDir> {
     root,
     runJsonPath,
     eventsPath: path.join(root, 'events.jsonl'),
+    logsPath: path.join(root, 'logs.jsonl'),
+    statusPath: path.join(root, 'status.json'),
     checkpointsDir: path.join(root, 'checkpoints'),
     artifactsDir: path.join(root, 'artifacts'),
     debugBundleDir: path.join(root, 'debug_bundle'),
@@ -92,6 +101,15 @@ export async function loadRunDir(root: string): Promise<RunDir> {
   await ensureDir(rd.checkpointsDir);
   await ensureDir(rd.artifactsDir);
   await ensureDir(rd.debugBundleDir);
+  await fs.writeFile(rd.logsPath, '', { encoding: 'utf8', flag: 'a' });
+  if (!(await fileExists(rd.statusPath))) {
+    await writeRunStatus({
+      runDir: rd,
+      run,
+      state: run.stopReason ? 'stopped' : 'running',
+      message: 'status reconstructed'
+    });
+  }
 
   // Resume must be deterministic: checkpoint state must exist.
   if (!(await fileExists(rd.checkpointStatePath))) {
