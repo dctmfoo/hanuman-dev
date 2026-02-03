@@ -28,8 +28,20 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check todo convention
+      - name: Readiness: Deadcode (knip)
+        run: pnpm check:deadcode
+
+      - name: Readiness: Complexity (eslint)
+        run: pnpm check:complexity
+
+      - name: Readiness: Duplication (jscpd)
+        run: pnpm check:dup
+
+      - name: Readiness: Todo Convention
         run: pnpm check:todo
+
+      - name: Readiness: Docs Links
+        run: pnpm check:docs
 
       - name: Test
         run: pnpm test

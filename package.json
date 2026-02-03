@@ -21,7 +21,8 @@
     "check:deadcode": "knip",
     "check:complexity": "eslint \"src/**/*.{ts,tsx}\"",
     "check:dup": "pnpm dlx jscpd --config .jscpd.json",
-    "check:todo": "tsx scripts/check-todo.ts"
+    "check:todo": "tsx scripts/check-todo.ts",
+    "check:docs": "tsx scripts/check-docs.ts"
   },
   "dependencies": {
     "commander": "^12.1.0",
