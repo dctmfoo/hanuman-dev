@@ -64,7 +64,9 @@ export async function loadResolvedConfig(cwd: string): Promise<ResolvedConfig> {
       stages: parsed.data.stages
         ? {
             ...parsed.data.stages,
-            work: parsed.data.stages.work ? { ...parsed.data.stages.work } : undefined
+            work: parsed.data.stages.work ? { ...parsed.data.stages.work } : undefined,
+            plan: parsed.data.stages.plan ? { ...parsed.data.stages.plan } : undefined,
+            review: parsed.data.stages.review ? { ...parsed.data.stages.review } : undefined
           }
         : undefined
     };

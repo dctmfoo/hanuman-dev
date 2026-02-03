@@ -5,9 +5,12 @@ import type { RunDir } from '../run/runDir.js';
 import type { RunJsonV01, StopReason } from '../run/types.js';
 import { loadCheckpointState, saveCheckpointState } from '../run/checkpoints.js';
 import { codexExecJsonl } from '../engines/codex.js';
+import { ClaudeEngine } from '../engines/claude.js';
 import { FakeCodexEngine } from '../engines/fakeCodex.js';
 import type { Engine } from '../engines/types.js';
+import type { RepoConfig } from '../config/schema.js';
 import type { PrdV01 } from '../prd/schema.js';
+import { resolveStageEngine } from '../stages/resolveStageEngine.js';
 
 export async function runExecutor(opts: {
   runDir: RunDir;
@@ -15,11 +18,18 @@ export async function runExecutor(opts: {
   prd: PrdV01;
   repoCwd: string;
   engine?: Engine;
+  repoConfig?: RepoConfig;
 }): Promise<{ stopReason: StopReason; exitCode: number; run: RunJsonV01 }> {
   const state = await loadCheckpointState(opts.runDir.checkpointStatePath);
 
+  const stageEngine = resolveStageEngine('work', opts.repoConfig);
   const engine: Engine =
-    opts.engine ?? (process.env.HANUMAN_ENGINE === 'fake-codex' ? FakeCodexEngine : { name: 'codex', execJsonl: codexExecJsonl });
+    opts.engine ??
+    (process.env.HANUMAN_ENGINE === 'fake-codex'
+      ? FakeCodexEngine
+      : stageEngine === 'claude'
+        ? ClaudeEngine
+        : { name: 'codex', execJsonl: codexExecJsonl });
 
   const completed = new Set(state.completedStoryIds);
 

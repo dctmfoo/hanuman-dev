@@ -181,7 +181,13 @@ program
 
       await writeJson(runDir.runJsonPath, runJson);
 
-      const result = await runExecutor({ runDir, run: runJson, prd: v.prd, repoCwd: cwd });
+      const result = await runExecutor({
+        runDir,
+        run: runJson,
+        prd: v.prd,
+        repoCwd: cwd,
+        repoConfig: resolvedConfig?.config
+      });
       stopReason = result.stopReason;
       exitCode = result.exitCode;
 
