@@ -22,7 +22,8 @@
     "check:complexity": "eslint \"src/**/*.{ts,tsx}\"",
     "check:dup": "pnpm dlx jscpd --config .jscpd.json",
     "check:todo": "tsx scripts/check-todo.ts",
-    "check:docs": "tsx scripts/check-docs.ts"
+    "check:docs": "tsx scripts/check-docs.ts",
+    "readiness:report": "tsx scripts/readiness-report.ts"
   },
   "dependencies": {
     "commander": "^12.1.0",
