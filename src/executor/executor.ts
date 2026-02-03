@@ -5,6 +5,8 @@ import type { RunDir } from '../run/runDir.js';
 import type { RunJsonV01, StopReason } from '../run/types.js';
 import { loadCheckpointState, saveCheckpointState } from '../run/checkpoints.js';
 import { codexExecJsonl } from '../engines/codex.js';
+import { FakeCodexEngine } from '../engines/fakeCodex.js';
+import type { Engine } from '../engines/types.js';
 import type { PrdV01 } from '../prd/schema.js';
 
 export async function runExecutor(opts: {
@@ -12,8 +14,12 @@ export async function runExecutor(opts: {
   run: RunJsonV01;
   prd: PrdV01;
   repoCwd: string;
+  engine?: Engine;
 }): Promise<{ stopReason: StopReason; exitCode: number; run: RunJsonV01 }> {
   const state = await loadCheckpointState(opts.runDir.checkpointStatePath);
+
+  const engine: Engine =
+    opts.engine ?? (process.env.HANUMAN_ENGINE === 'fake-codex' ? FakeCodexEngine : { name: 'codex', execJsonl: codexExecJsonl });
 
   // IMPORTANT: On resume, run.json progress may be stale. Source of truth is the checkpoint.
   opts.run.progress.currentStoryIndex = state.currentStoryIndex;
@@ -51,7 +57,7 @@ export async function runExecutor(opts: {
 
     let r;
     try {
-      r = await codexExecJsonl({
+      r = await engine.execJsonl({
         cwd: opts.repoCwd,
         prompt,
         eventsPath: opts.runDir.eventsPath,
@@ -78,8 +84,9 @@ export async function runExecutor(opts: {
     const storyArtifactPath = path.join(opts.runDir.artifactsDir, `story-${idx + 1}-${story.id}.json`);
     await writeJson(storyArtifactPath, {
       story,
-      codexExitCode: r.code,
-      codexSignal: r.signal,
+      engine: engine.name,
+      exitCode: r.code,
+      signal: r.signal,
       lastOutputJson: r.lastOutputJson
     });
 
