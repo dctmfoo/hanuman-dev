@@ -34,6 +34,8 @@ This project is inspired by and builds on patterns and tooling from:
 We adapt these ideas to a repo-agnostic, multi-engine, multi-model workflow orchestrator.
 
 ## Docs
+- [Functional spec (v0.1)](docs/functional-spec-v0.1.md)
+- [Quickstart (v0.1)](docs/quickstart-v0.1.md)
 - [Architecture](docs/01-architecture.md)
 - [Workflow model](docs/02-workflow.md)
 - [Engine adapters](docs/03-engines.md)
