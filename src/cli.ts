@@ -22,9 +22,22 @@ program
 
 program
   .command('init')
-  .description('Initialize .halo/config.json in the current repo (stub).')
-  .action(() => {
-    console.log('init: TODO (will create .halo/config.json + helper scripts)');
+  .description('Initialize .halo/hanuman-dev.json in the current repo.')
+  .action(async () => {
+    const { initRepoConfig } = await import('./config/config.js');
+    const r = await initRepoConfig(process.cwd());
+    console.log(`${r.created ? 'created' : 'exists'}: ${r.configPath}`);
+  });
+
+const configCmd = program.command('config').description('Manage/inspect hanuman-dev repo config.');
+
+configCmd
+  .command('print')
+  .description('Print resolved config and sources (defaults + repo overrides).')
+  .action(async () => {
+    const { loadResolvedConfig } = await import('./config/config.js');
+    const r = await loadResolvedConfig(process.cwd());
+    console.log(JSON.stringify(r, null, 2));
   });
 
 program
@@ -36,7 +49,7 @@ program
   .option('--ask-for-approval', 'Ask for approvals during Codex execution', false)
   .option('--profile <name>', 'Codex profile name')
   .option('-c, --config <keyValue...>', 'Config overrides (key=value)', [])
-  .action(async (opts) => {
+  .action(async function (this: any, opts) {
     let stopReason: StopReason = 'UNKNOWN_ERROR';
     let exitCode = 1;
 
@@ -49,6 +62,27 @@ program
 
     const prdPath = path.resolve(opts.prd);
     const cwd = process.cwd();
+
+    // Load repo config (if present) and apply defaults only when the CLI flag wasn't explicitly set.
+    let resolvedConfig;
+    try {
+      const { loadResolvedConfig } = await import('./config/config.js');
+      resolvedConfig = await loadResolvedConfig(cwd);
+    } catch (e) {
+      // Don't fail the run, but DO surface that defaults weren't applied.
+      console.warn(`[hanuman-dev] warning: failed to load repo config defaults: ${(e as Error).message}`);
+      resolvedConfig = undefined;
+    }
+
+    const sandboxSource = this.getOptionValueSource?.('sandbox');
+    const approvalSource = this.getOptionValueSource?.('askForApproval');
+
+    if (sandboxSource === 'default' && resolvedConfig?.config.defaults?.sandbox !== undefined) {
+      opts.sandbox = resolvedConfig.config.defaults.sandbox;
+    }
+    if (approvalSource === 'default' && resolvedConfig?.config.defaults?.askForApproval !== undefined) {
+      opts.askForApproval = resolvedConfig.config.defaults.askForApproval;
+    }
 
     // NOTE: init (create/load run dir + read run.json) must be inside the try.
     // Otherwise invalid --resume paths or malformed run.json will crash without stopReason/debug bundle.
