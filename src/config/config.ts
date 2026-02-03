@@ -60,7 +60,13 @@ export async function loadResolvedConfig(cwd: string): Promise<ResolvedConfig> {
       ...parsed.data,
       commands: { ...DEFAULT_REPO_CONFIG.commands, ...parsed.data.commands },
       boundaries: { ...DEFAULT_REPO_CONFIG.boundaries, ...parsed.data.boundaries },
-      defaults: { ...DEFAULT_REPO_CONFIG.defaults, ...parsed.data.defaults }
+      defaults: { ...DEFAULT_REPO_CONFIG.defaults, ...parsed.data.defaults },
+      stages: parsed.data.stages
+        ? {
+            ...parsed.data.stages,
+            work: parsed.data.stages.work ? { ...parsed.data.stages.work } : undefined
+          }
+        : undefined
     };
   }
 
