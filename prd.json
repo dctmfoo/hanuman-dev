@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "0.1",
+  "title": "hanuman-dev v0.1 — Codex-first Ralph-style executor",
+  "repo": {
+    "name": "hanuman-dev",
+    "path": "."
+  },
+  "principles": [
+    "Repo-agnostic",
+    "Replayable and deterministic via checkpoints",
+    "Codex-first; multi-model orchestration deferred",
+    "Durable run artifacts (run.json + events.jsonl + debug bundles)"
+  ],
+  "stories": [
+    {
+      "id": "RUNDIR_CONTRACT",
+      "title": "Create versioned run directory with run.json + events.jsonl + subfolders",
+      "size": "S",
+      "acceptance": [
+        "Running `hanuman-dev run --prd <file>` creates <HALO_HOME>/runs/<runId>/ with required structure.",
+        "run.json includes contractVersion=0.1, runId, timestamps, and resolved CLI args/config."
+      ]
+    },
+    {
+      "id": "GIT_PRECHECKS",
+      "title": "Enforce clean worktree and record base sync metadata",
+      "size": "S",
+      "acceptance": [
+        "If git worktree is dirty, executor stops with stopReason=DIRTY_WORKTREE.",
+        "run.json records branch + head sha and best-effort fetch outcome."
+      ]
+    },
+    {
+      "id": "CODEX_METADATA",
+      "title": "Record codex version and features list in run metadata",
+      "size": "S",
+      "acceptance": [
+        "run.json contains codex.version from `codex --version`.",
+        "run.json contains codex.features from a best-effort features command (or notes why unavailable)."
+      ]
+    },
+    {
+      "id": "CODEX_EXEC_JSONL",
+      "title": "Execute a story via `codex exec --json` and persist the JSONL stream",
+      "size": "M",
+      "acceptance": [
+        "events.jsonl contains the raw JSONL stream from Codex.",
+        "Executor uses --output-schema for machine-checkable story output.",
+        "On Codex failure, stopReason=ENGINE_ERROR and debug_bundle is generated."
+      ]
+    },
+    {
+      "id": "CHECKPOINT_RESUME",
+      "title": "Checkpoint after each story and support deterministic resume",
+      "size": "M",
+      "acceptance": [
+        "checkpoints/state.json records currentStoryIndex and completed story ids.",
+        "`--resume <runDir>` continues from the next story without rerunning completed stories."
+      ]
+    },
+    {
+      "id": "DEBUG_BUNDLE",
+      "title": "Generate failure debug bundle with last events and git state",
+      "size": "S",
+      "acceptance": [
+        "On failure, debug_bundle/summary.md, git-status.txt, git-diff.patch, and events-tail.jsonl exist."
+      ]
+    },
+    {
+      "id": "STORY_SIZING_VALIDATION",
+      "title": "Conservative story sizing validation (reject L/XL; cap story count)",
+      "size": "S",
+      "acceptance": [
+        "If any story size is L/XL, stopReason=VALIDATION_FAILED.",
+        "If stories > 10, stopReason=VALIDATION_FAILED."
+      ]
+    }
+  ]
+}
