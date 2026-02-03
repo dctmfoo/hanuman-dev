@@ -41,14 +41,10 @@ We adapt these ideas to a repo-agnostic, multi-engine, multi-model workflow orch
 - [Engine adapters](docs/03-engines.md)
 - [Repo config](docs/04-config.md)
 
-## Quickstart (planned)
+## Quickstart (v0.1)
+- See: [docs/quickstart-v0.1.md](docs/quickstart-v0.1.md)
+
+Fast sanity check (no Codex required):
 ```bash
-# install globally (planned)
-npm i -g hanuman-dev
-
-# initialize in a repo (planned)
-hanuman-dev init
-
-# run a workflow from a brief (planned)
-hanuman-dev run "add an admin dashboard"
+./scripts/smoke-run.sh
 ```
