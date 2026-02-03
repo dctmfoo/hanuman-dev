@@ -49,16 +49,29 @@ export async function runExecutor(opts: {
 
     const prompt = `You are executing a single small story in a repo, Ralph-style.\n\nSTORY: ${story.id} — ${story.title}\nSIZE: ${story.size}\nACCEPTANCE:\n- ${story.acceptance.join('\n- ')}\n\nConstraints (if any):\n${(story.constraints ?? []).map((c) => `- ${c}`).join('\n') || '(none)'}\n\nRules:\n- Keep the change small and focused on this story only.\n- Prefer incremental commits are NOT required; just modify the working tree.\n- Run existing tests/linters only if quick; otherwise state what you'd run.\n- At the end, output a JSON object matching the provided output schema.\n`;
 
-    const r = await codexExecJsonl({
-      cwd: opts.repoCwd,
-      prompt,
-      eventsPath: opts.runDir.eventsPath,
-      outputSchema,
-      sandbox: opts.run.cli.sandbox,
-      askForApproval: opts.run.cli.askForApproval,
-      profile: opts.run.cli.profile,
-      configOverrides: opts.run.cli.configOverrides
-    });
+    let r;
+    try {
+      r = await codexExecJsonl({
+        cwd: opts.repoCwd,
+        prompt,
+        eventsPath: opts.runDir.eventsPath,
+        outputSchema,
+        sandbox: opts.run.cli.sandbox,
+        askForApproval: opts.run.cli.askForApproval,
+        profile: opts.run.cli.profile,
+        configOverrides: opts.run.cli.configOverrides
+      });
+    } catch (e) {
+      // Missing codex binary / spawn errors should be classified as engine errors.
+      return {
+        stopReason: 'ENGINE_ERROR',
+        exitCode: 1,
+        run: {
+          ...opts.run,
+          error: { message: (e as Error).message, stack: (e as Error).stack }
+        }
+      };
+    }
 
     // Persist per-story artifact
     const storyArtifactPath = path.join(opts.runDir.artifactsDir, `story-${idx + 1}-${story.id}.json`);

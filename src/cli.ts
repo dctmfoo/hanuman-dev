@@ -101,7 +101,14 @@ program
         );
       }
 
-      const raw = JSON.parse(prdRawText) as unknown;
+      let raw: unknown;
+      try {
+        raw = JSON.parse(prdRawText) as unknown;
+      } catch (e) {
+        stopReason = 'VALIDATION_FAILED';
+        throw new Error(`Invalid PRD JSON: ${(e as Error).message}`);
+      }
+
       const v = validatePrdConservative(raw);
       if (!v.ok) {
         stopReason = 'VALIDATION_FAILED';
