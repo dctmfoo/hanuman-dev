@@ -18,7 +18,8 @@
     "prepare": "npm run build",
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
-    "check:deadcode": "knip"
+    "check:deadcode": "knip",
+    "check:complexity": "eslint \"src/**/*.{ts,tsx}\""
   },
   "dependencies": {
     "commander": "^12.1.0",
@@ -26,6 +27,9 @@
   },
   "devDependencies": {
     "@types/node": "^22.19.7",
+    "@typescript-eslint/parser": "^8.25.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-sonarjs": "^0.25.1",
     "knip": "^5.33.0",
     "tsx": "^4.19.2",
     "typescript": "^5.8.2",
