@@ -2,7 +2,18 @@
 
 This is the **v0.1 executor**: repo-agnostic, replayable, checkpointed runs using **Codex CLI**.
 
-## Install (local dev)
+## Install
+
+### Global install (recommended)
+
+From the `hanuman-dev` repo:
+
+```bash
+npm i -g .
+hanuman-dev --help
+```
+
+### Local dev
 
 ```bash
 pnpm install

@@ -1,6 +1,8 @@
 # Repo config
 
-Per-repo config file: `.halo/config.json`
+Per-repo config file (recommended): `.halo/hanuman-dev.json`
+
+(Note: `hanuman-dev init` is currently a stub; we will implement it to create this file + `.halo/.gitignore`.)
 
 ## Example
 ```json

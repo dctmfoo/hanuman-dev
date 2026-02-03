@@ -3,11 +3,19 @@
 ## Requirement
 Models and CLI argument formats change. We want an abstraction layer so updates happen in one place.
 
-## Engine roles
+## Engine roles (intended)
 - Planner: Claude Code (Opus default)
 - Executor: Codex CLI (gpt-5.2-codex default)
 - Reviewer: Claude Code (Opus) + Codex review
 - Compound: cheaper model (Sonnet / Codex)
+
+## Current implementation (v0.1)
+
+- Only the **Codex** adapter is implemented and wired into the executor today.
+- A **FakeCodex** adapter exists for tests/smoke runs.
+- Claude Code adapter is planned but not yet implemented.
+
+See: `docs/05-status-and-roadmap.md`
 
 ## Adapter interface (concept)
 Each adapter provides:
