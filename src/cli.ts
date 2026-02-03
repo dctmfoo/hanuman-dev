@@ -68,7 +68,9 @@ program
     try {
       const { loadResolvedConfig } = await import('./config/config.js');
       resolvedConfig = await loadResolvedConfig(cwd);
-    } catch {
+    } catch (e) {
+      // Don't fail the run, but DO surface that defaults weren't applied.
+      console.warn(`[hanuman-dev] warning: failed to load repo config defaults: ${(e as Error).message}`);
       resolvedConfig = undefined;
     }
 
