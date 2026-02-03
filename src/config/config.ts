@@ -28,13 +28,6 @@ export const DEFAULT_REPO_CONFIG: RepoConfig = {
   defaults: {
     sandbox: true,
     askForApproval: false
-  },
-  stages: {
-    work: {
-      engine: 'codex',
-      sandbox: true,
-      askForApproval: false
-    }
   }
 };
 
@@ -68,14 +61,12 @@ export async function loadResolvedConfig(cwd: string): Promise<ResolvedConfig> {
       commands: { ...DEFAULT_REPO_CONFIG.commands, ...parsed.data.commands },
       boundaries: { ...DEFAULT_REPO_CONFIG.boundaries, ...parsed.data.boundaries },
       defaults: { ...DEFAULT_REPO_CONFIG.defaults, ...parsed.data.defaults },
-      stages: {
-        ...DEFAULT_REPO_CONFIG.stages,
-        ...parsed.data.stages,
-        work: {
-          ...DEFAULT_REPO_CONFIG.stages?.work,
-          ...parsed.data.stages?.work
-        }
-      }
+      stages: parsed.data.stages
+        ? {
+            ...parsed.data.stages,
+            work: parsed.data.stages.work ? { ...parsed.data.stages.work } : undefined
+          }
+        : undefined
     };
   }
 
