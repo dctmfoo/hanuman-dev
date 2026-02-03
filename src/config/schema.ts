@@ -1,5 +1,15 @@
 import { z } from 'zod';
 
+export const StageConfigSchema = z
+  .object({
+    engine: z.enum(['codex']).optional(),
+    sandbox: z.boolean().optional(),
+    askForApproval: z.boolean().optional(),
+    profile: z.string().min(1).optional(),
+    configOverrides: z.record(z.string(), z.string()).optional()
+  })
+  .strict();
+
 export const RepoConfigSchema = z.object({
   schemaVersion: z.literal('0.1').default('0.1'),
   commands: z
@@ -19,7 +29,14 @@ export const RepoConfigSchema = z.object({
       sandbox: z.boolean().optional(),
       askForApproval: z.boolean().optional()
     })
+    .optional(),
+  stages: z
+    .object({
+      work: StageConfigSchema.optional()
+      // plan/review will be added once Claude adapter exists
+    })
     .optional()
 });
 
+export type StageConfig = z.infer<typeof StageConfigSchema>;
 export type RepoConfig = z.infer<typeof RepoConfigSchema>;

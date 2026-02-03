@@ -77,11 +77,26 @@ program
     const sandboxSource = this.getOptionValueSource?.('sandbox');
     const approvalSource = this.getOptionValueSource?.('askForApproval');
 
-    if (sandboxSource === 'default' && resolvedConfig?.config.defaults?.sandbox !== undefined) {
-      opts.sandbox = resolvedConfig.config.defaults.sandbox;
+    // Stage config (work stage) takes precedence over global defaults.
+    const stageWork = resolvedConfig?.config.stages?.work;
+
+    if (sandboxSource === 'default') {
+      if (stageWork?.sandbox !== undefined) opts.sandbox = stageWork.sandbox;
+      else if (resolvedConfig?.config.defaults?.sandbox !== undefined) opts.sandbox = resolvedConfig.config.defaults.sandbox;
     }
-    if (approvalSource === 'default' && resolvedConfig?.config.defaults?.askForApproval !== undefined) {
-      opts.askForApproval = resolvedConfig.config.defaults.askForApproval;
+
+    if (approvalSource === 'default') {
+      if (stageWork?.askForApproval !== undefined) opts.askForApproval = stageWork.askForApproval;
+      else if (resolvedConfig?.config.defaults?.askForApproval !== undefined)
+        opts.askForApproval = resolvedConfig.config.defaults.askForApproval;
+    }
+
+    // Stage config overrides for codex flags
+    if (stageWork?.profile) opts.profile = opts.profile ?? stageWork.profile;
+    if (stageWork?.configOverrides) {
+      for (const [k, v] of Object.entries(stageWork.configOverrides)) {
+        if (configOverrides[k] === undefined) configOverrides[k] = String(v);
+      }
     }
 
     // NOTE: init (create/load run dir + read run.json) must be inside the try.
