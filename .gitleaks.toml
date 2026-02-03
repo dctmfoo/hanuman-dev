@@ -1,0 +1,9 @@
+[allowlist]
+description = "Exclude local artifacts and env files"
+paths = [
+  '''dist/.*''',
+  '''node_modules/.*''',
+  '''\.halo/.*''',
+  '''\.env''',
+  '''\.env\..*'''
+]
