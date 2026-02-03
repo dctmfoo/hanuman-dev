@@ -43,6 +43,11 @@ Automated compounding:
 - If input required, transition to NEEDS_HUMAN with a concrete question.
 - Resuming is deterministic from persisted state.
 
+## Code ownership
+- Default owners are declared in `.github/CODEOWNERS` (single owner is fine).
+- Owners are accountable for review/approval in their areas and keeping CODEOWNERS up to date.
+- If a change touches an unowned area, update CODEOWNERS in the same PR.
+
 ## Todo/Fixme convention
 Use uppercase todo/fixme tags only in the following format so automation can find them:
 - `TODO(AR8-123): follow up on parser edge cases`
