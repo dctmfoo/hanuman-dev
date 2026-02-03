@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 
 export type ExecResult = {
   code: number;
+  signal?: NodeJS.Signals;
   stdout: string;
   stderr: string;
 };
@@ -20,8 +21,10 @@ export function execCapture(cmd: string, args: string[], opts?: { cwd?: string; 
     child.stderr.on('data', (d: Buffer) => (stderr += d.toString()));
 
     child.on('error', reject);
-    child.on('close', (code: number | null) => {
-      resolve({ code: code ?? 0, stdout, stderr });
+    child.on('close', (code: number | null, signal: NodeJS.Signals | null) => {
+      // If a subprocess is terminated by signal, treat it as a failure.
+      const finalCode = code === null ? 1 : code;
+      resolve({ code: finalCode, signal: signal ?? undefined, stdout, stderr });
     });
   });
 }
