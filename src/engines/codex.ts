@@ -32,26 +32,31 @@ export async function getCodexVersion(cwd: string): Promise<string | undefined> 
 
 export async function getCodexFeaturesBestEffort(cwd: string): Promise<string[] | undefined> {
   // NOTE: Codex CLI feature-list command may vary; treat as best-effort.
-  const candidates: Array<{ cmd: string; args: string[] }> = [
-    { cmd: 'codex', args: ['--help'] },
-    { cmd: 'codex', args: ['help'] }
-    // If/when Codex adds an explicit `features` command, add it here.
-  ];
+  // This must never throw (missing codex binary should not abort a run).
+  try {
+    const candidates: Array<{ cmd: string; args: string[] }> = [
+      { cmd: 'codex', args: ['--help'] },
+      { cmd: 'codex', args: ['help'] }
+      // If/when Codex adds an explicit `features` command, add it here.
+    ];
 
-  const { execCapture } = await import('../lib/proc.js');
+    const { execCapture } = await import('../lib/proc.js');
 
-  for (const c of candidates) {
-    const r = await execCapture(c.cmd, c.args, { cwd });
-    if (r.code === 0) {
-      const lines = r.stdout
-        .split('\n')
-        .map((l) => l.trim())
-        .filter(Boolean)
-        .slice(0, 200);
-      return lines;
+    for (const c of candidates) {
+      const r = await execCapture(c.cmd, c.args, { cwd });
+      if (r.code === 0) {
+        const lines = r.stdout
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean)
+          .slice(0, 200);
+        return lines;
+      }
     }
+    return undefined;
+  } catch {
+    return undefined;
   }
-  return undefined;
 }
 
 export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult> {
