@@ -14,8 +14,13 @@ export async function runExecutor(opts: {
   repoCwd: string;
 }): Promise<{ stopReason: StopReason; exitCode: number; run: RunJsonV01 }> {
   const state = await loadCheckpointState(opts.runDir.checkpointStatePath);
-  let idx = state.currentStoryIndex;
 
+  // IMPORTANT: On resume, run.json progress may be stale. Source of truth is the checkpoint.
+  opts.run.progress.currentStoryIndex = state.currentStoryIndex;
+  opts.run.progress.completedStoryIds = [...state.completedStoryIds];
+  await writeJson(opts.runDir.runJsonPath, opts.run);
+
+  let idx = state.currentStoryIndex;
   const completed = new Set(state.completedStoryIds);
 
   for (; idx < opts.prd.stories.length; idx++) {
@@ -79,8 +84,9 @@ export async function runExecutor(opts: {
   }
 
   // mark finished
-  opts.run.progress.currentStoryIndex = opts.prd.stories.length;
-  opts.run.progress.completedStoryIds = Array.from(new Set(opts.run.progress.completedStoryIds));
+  // Source of truth for completion is the checkpoint state we just updated (or loaded on resume).
+  opts.run.progress.currentStoryIndex = state.currentStoryIndex;
+  opts.run.progress.completedStoryIds = Array.from(new Set(state.completedStoryIds));
   await writeJson(opts.runDir.runJsonPath, opts.run);
 
   // Write simple completion artifact
