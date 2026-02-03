@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { spawn } from 'node:child_process';
 
 export type CodexExecOptions = {
@@ -13,6 +14,14 @@ export type CodexExecOptions = {
   /** Kill the Codex process if it runs longer than this. */
   timeoutMs?: number;
 };
+
+// codex-cli (e.g. 0.94.0) expects:
+// - --output-schema <FILE>
+// - --sandbox <MODE> (read-only|workspace-write|danger-full-access)
+// - --ask-for-approval <POLICY> (untrusted|on-failure|on-request|never)
+const DEFAULT_SANDBOX_MODE = 'workspace-write';
+const DEFAULT_APPROVAL_POLICY = 'on-request';
+
 
 export type CodexExecResult = {
   code: number;
@@ -65,12 +74,33 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
   return new Promise((resolve, reject) => {
     const args: string[] = ['exec', '--json'];
 
+    // codex-cli expects a path to a JSON Schema file.
     if (opts.outputSchema) {
-      args.push('--output-schema', JSON.stringify(opts.outputSchema));
+      const runRoot = path.dirname(opts.eventsPath);
+      const schemaPath = path.join(runRoot, 'artifacts', 'output-schema.json');
+      // best-effort: ensure artifacts dir + write schema
+      // (sync write keeps this function simple; failures will reject via try/catch below)
+      try {
+        fs.mkdirSync(path.dirname(schemaPath), { recursive: true });
+        fs.writeFileSync(schemaPath, JSON.stringify(opts.outputSchema, null, 2) + '\n', 'utf8');
+      } catch (e) {
+        return reject(e);
+      }
+      args.push('--output-schema', schemaPath);
     }
 
-    if (opts.sandbox) args.push('--sandbox');
-    if (opts.askForApproval) args.push('--ask-for-approval');
+    if (opts.sandbox) args.push('--sandbox', DEFAULT_SANDBOX_MODE);
+    if (opts.askForApproval) args.push('--ask-for-approval', DEFAULT_APPROVAL_POLICY);
+
+    // Capture the final agent message in a dedicated file (more reliable than parsing the event stream).
+    const runRoot = path.dirname(opts.eventsPath);
+    const lastMessagePath = path.join(runRoot, 'artifacts', 'codex-last-message.json');
+    try {
+      fs.mkdirSync(path.dirname(lastMessagePath), { recursive: true });
+    } catch (e) {
+      return reject(e);
+    }
+    args.push('-o', lastMessagePath);
 
     if (opts.profile) {
       args.push('--profile', opts.profile);
@@ -102,6 +132,9 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
     // Buffer to avoid dropping JSON objects split across chunk boundaries.
     let carry = '';
 
+    // Track the last agent_message.text that parses as JSON (often the schema-shaped output).
+    let lastAgentJson: unknown | undefined;
+
     const timeoutMs = opts.timeoutMs ?? 30 * 60 * 1000;
     const timeout = setTimeout(() => {
       // Best-effort kill; executor will map signal -> non-zero.
@@ -123,7 +156,15 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
         const t = line.trim();
         if (!t) continue;
         try {
-          lastJson = JSON.parse(t);
+          const obj = JSON.parse(t);
+          lastJson = obj;
+          if (obj && typeof obj === 'object' && (obj as any).type === 'agent_message' && typeof (obj as any).text === 'string') {
+            try {
+              lastAgentJson = JSON.parse((obj as any).text);
+            } catch {
+              // ignore
+            }
+          }
         } catch {
           // ignore
         }
@@ -148,7 +189,15 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
       const t = carry.trim();
       if (t) {
         try {
-          lastJson = JSON.parse(t);
+          const obj = JSON.parse(t);
+          lastJson = obj;
+          if (obj && typeof obj === 'object' && (obj as any).type === 'agent_message' && typeof (obj as any).text === 'string') {
+            try {
+              lastAgentJson = JSON.parse((obj as any).text);
+            } catch {
+              // ignore
+            }
+          }
         } catch {
           // ignore
         }
@@ -158,7 +207,31 @@ export function codexExecJsonl(opts: CodexExecOptions): Promise<CodexExecResult>
 
       // If terminated by signal, treat as non-zero (abort/failure) so the executor can generate debug bundles.
       const finalCode = code === null ? 1 : code;
-      resolve({ code: finalCode, signal: signal ?? undefined, lastOutputJson: lastJson, stderrTail: stderr });
+
+      // Prefer the explicit last-message file if it exists and parses, else fall back to agent_message JSON.
+      let finalOutput: unknown = lastJson;
+      try {
+        // lastMessagePath is included in args as '-o <path>'
+        const idx = args.findIndex((a) => a === '-o' || a === '--output-last-message');
+        const p = idx >= 0 ? args[idx + 1] : undefined;
+        if (p) {
+          const raw = fs.readFileSync(p, 'utf8').trim();
+          if (raw) {
+            try {
+              finalOutput = JSON.parse(raw);
+            } catch {
+              // if it's not JSON, keep as string
+              finalOutput = raw;
+            }
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      if (lastAgentJson) finalOutput = lastAgentJson;
+
+      resolve({ code: finalCode, signal: signal ?? undefined, lastOutputJson: finalOutput, stderrTail: stderr });
     });
   });
 }

@@ -88,7 +88,8 @@ export async function runExecutor(opts: {
         testsRun: { type: 'array', items: { type: 'string' } },
         notes: { type: 'array', items: { type: 'string' } }
       },
-      required: ['status', 'summary']
+      // codex-cli output schema validation requires `required` to include every key in `properties`.
+      required: ['status', 'summary', 'filesChanged', 'testsRun', 'notes']
     };
 
     const prompt = `You are executing a single small story in a repo, Ralph-style.\n\nSTORY: ${story.id} — ${story.title}\nSIZE: ${story.size}\nACCEPTANCE:\n- ${story.acceptance.join('\n- ')}\n\nConstraints (if any):\n${(story.constraints ?? []).map((c) => `- ${c}`).join('\n') || '(none)'}\n\nRules:\n- Keep the change small and focused on this story only.\n- Prefer incremental commits are NOT required; just modify the working tree.\n- Run existing tests/linters only if quick; otherwise state what you'd run.\n- At the end, output a JSON object matching the provided output schema.\n`;
