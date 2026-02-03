@@ -52,6 +52,7 @@ export type RunJsonV01 = {
   progress: {
     currentStoryIndex: number;
     completedStoryIds: string[];
+    nextStoryId?: string | null;
   };
   stopReason?: StopReason;
 
@@ -67,7 +68,17 @@ export type RunJsonV01 = {
 export type CheckpointStateV01 = {
   contractVersion: '0.1';
   runId: string;
+
+  /**
+   * Back-compat field (older checkpoints may only have index-based progress).
+   * v0.1+ prefers story-id based progress via nextStoryId.
+   */
   currentStoryIndex: number;
+
   completedStoryIds: string[];
+
+  /** Next story to run (by id). If undefined/null, executor computes it from PRD + completedStoryIds. */
+  nextStoryId?: string | null;
+
   updatedAt: string;
 };

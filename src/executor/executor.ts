@@ -21,23 +21,48 @@ export async function runExecutor(opts: {
   const engine: Engine =
     opts.engine ?? (process.env.HANUMAN_ENGINE === 'fake-codex' ? FakeCodexEngine : { name: 'codex', execJsonl: codexExecJsonl });
 
-  // IMPORTANT: On resume, run.json progress may be stale. Source of truth is the checkpoint.
-  opts.run.progress.currentStoryIndex = state.currentStoryIndex;
-  opts.run.progress.completedStoryIds = [...state.completedStoryIds];
-  await writeJson(opts.runDir.runJsonPath, opts.run);
-
-  let idx = state.currentStoryIndex;
   const completed = new Set(state.completedStoryIds);
 
-  for (; idx < opts.prd.stories.length; idx++) {
+  // Determine next story based on identity, not array index.
+  const computeNextStoryId = (): string | null => {
+    for (const s of opts.prd.stories) {
+      if (!completed.has(s.id)) return s.id;
+    }
+    return null;
+  };
+
+  // Migrate old checkpoints (index-based) to nextStoryId for deterministic resume.
+  if (state.nextStoryId === undefined) {
+    state.nextStoryId = computeNextStoryId();
+    // best-effort index mirror
+    state.currentStoryIndex = Math.max(0, opts.prd.stories.findIndex((s) => s.id === state.nextStoryId));
+    await saveCheckpointState(opts.runDir.checkpointStatePath, state);
+  }
+
+  // IMPORTANT: On resume, run.json progress may be stale. Source of truth is the checkpoint.
+  opts.run.progress.completedStoryIds = Array.from(completed);
+  opts.run.progress.nextStoryId = state.nextStoryId ?? computeNextStoryId();
+  opts.run.progress.currentStoryIndex = opts.run.progress.nextStoryId
+    ? Math.max(0, opts.prd.stories.findIndex((s) => s.id === opts.run.progress.nextStoryId))
+    : opts.prd.stories.length;
+  await writeJson(opts.runDir.runJsonPath, opts.run);
+
+  // Always compute the next story dynamically from completed story IDs.
+  for (;;) {
+    const nextId = computeNextStoryId();
+    if (!nextId) break;
+
+    const idx = opts.prd.stories.findIndex((s) => s.id === nextId);
+    if (idx < 0) return { stopReason: 'VALIDATION_FAILED', exitCode: 1, run: opts.run };
+
     const story = opts.prd.stories[idx];
-    if (completed.has(story.id)) continue;
 
     // checkpoint: about to run story
     await saveCheckpointState(opts.runDir.checkpointStatePath, {
       ...state,
       currentStoryIndex: idx,
-      completedStoryIds: Array.from(completed)
+      completedStoryIds: Array.from(completed),
+      nextStoryId: story.id
     });
 
     const outputSchema = {
@@ -114,19 +139,29 @@ export async function runExecutor(opts: {
 
     completed.add(story.id);
     state.completedStoryIds = Array.from(completed);
-    state.currentStoryIndex = idx + 1;
+    state.nextStoryId = computeNextStoryId();
+
+    // best-effort index mirror (legacy)
+    state.currentStoryIndex = state.nextStoryId ? Math.max(0, opts.prd.stories.findIndex((s) => s.id === state.nextStoryId)) : opts.prd.stories.length;
+
     await saveCheckpointState(opts.runDir.checkpointStatePath, state);
 
     // update run.json progress
-    opts.run.progress.currentStoryIndex = state.currentStoryIndex;
     opts.run.progress.completedStoryIds = state.completedStoryIds;
+    opts.run.progress.nextStoryId = state.nextStoryId;
+    opts.run.progress.currentStoryIndex = state.currentStoryIndex;
     await writeJson(opts.runDir.runJsonPath, opts.run);
   }
 
   // mark finished
+  state.nextStoryId = null;
+  state.currentStoryIndex = opts.prd.stories.length;
+  await saveCheckpointState(opts.runDir.checkpointStatePath, state);
+
   // Source of truth for completion is the checkpoint state we just updated (or loaded on resume).
   opts.run.progress.currentStoryIndex = state.currentStoryIndex;
   opts.run.progress.completedStoryIds = Array.from(new Set(state.completedStoryIds));
+  opts.run.progress.nextStoryId = null;
   await writeJson(opts.runDir.runJsonPath, opts.run);
 
   // Write simple completion artifact
