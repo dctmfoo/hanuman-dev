@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractDocsSection, findRelativeLinks } from './docs-readiness.js';
+import {
+  extractDocsSection,
+  extractGoldenCommandsSection,
+  findGoldenCommands,
+  findRelativeLinks,
+} from './docs-readiness.js';
 
 describe('extractDocsSection', () => {
   it('returns null when no docs section exists', () => {
@@ -37,5 +42,46 @@ describe('findRelativeLinks', () => {
     ].join('\n');
 
     expect(findRelativeLinks(markdown)).toEqual(['docs/spec.md', 'docs/guide.md']);
+  });
+});
+
+describe('extractGoldenCommandsSection', () => {
+  it('captures the golden commands section content', () => {
+    const readme = [
+      '# Docs',
+      '',
+      '## Golden Commands',
+      '```bash',
+      'pnpm -s build',
+      '```',
+      '',
+      '## Next',
+      'More text',
+    ].join('\n');
+
+    const section = extractGoldenCommandsSection(readme);
+    expect(section).toContain('pnpm -s build');
+    expect(section).not.toContain('## Next');
+  });
+});
+
+describe('findGoldenCommands', () => {
+  it('extracts commands from shell fences and normalizes prompts', () => {
+    const section = [
+      '```bash',
+      '# comment',
+      '$ pnpm -s build',
+      'node dist/cli.js --help \\',
+      '  --json',
+      '```',
+      '```ts',
+      'console.log(\"skip\");',
+      '```',
+    ].join('\n');
+
+    expect(findGoldenCommands(section)).toEqual([
+      'pnpm -s build',
+      'node dist/cli.js --help --json',
+    ]);
   });
 });
