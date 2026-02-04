@@ -2,31 +2,37 @@
 
 Per-repo config file (recommended): `.halo/hanuman-dev.json`
 
-(Note: `hanuman-dev init` is currently a stub; we will implement it to create this file + `.halo/.gitignore`.)
+`hanuman-dev init` creates this file plus `.halo/.gitignore`.
 
-## Example
+## Schema highlights (v0.1)
+- `schemaVersion`: currently `0.1`
+- `defaults`: global toggles for `sandbox` and `askForApproval`
+- `stages`: per-stage overrides for `work`, `plan`, `review` (e.g., `engine`, `model`, `reasoning`, `sandbox`, `askForApproval`, `profile`, `configOverrides`)
+
+Only the `work` stage executes today, but plan/review can be configured for future use.
+
+## Precedence (high level)
+1. Built-in defaults
+2. Repo config (`.halo/hanuman-dev.json`) overrides defaults
+3. For run-time stage settings, `stages.work` overrides global defaults
+4. CLI flags override repo config for the current run
+
+## Minimal example
 ```json
 {
-  "projectName": "openai-agents",
-  "commands": {
-    "install": "pnpm install",
-    "test": "pnpm test",
-    "build": "pnpm build"
+  "schemaVersion": "0.1",
+  "defaults": {
+    "sandbox": true,
+    "askForApproval": false
   },
-  "boundaries": {
-    "neverTouch": ["dist/**", "node_modules/**", "**/*.lock"]
-  },
-  "workflow": {
-    "prdFormat": "prd.json",
-    "defaultIterations": 10
-  },
-  "engines": {
-    "planner": { "kind": "claude", "model": "opus", "reasoning": "high" },
-    "executor": { "kind": "codex", "model": "gpt-5.2-codex", "reasoning": "high" },
-    "reviewer": { "kind": "claude", "model": "opus", "reasoning": "high" }
+  "stages": {
+    "work": { "engine": "codex" },
+    "plan": { "engine": "claude", "model": "<plan-model>", "reasoning": "high" },
+    "review": { "engine": "claude", "model": "<review-model>", "reasoning": "high" }
   }
 }
 ```
+Replace the `<plan-model>` and `<review-model>` placeholders with real model names.
 
 ## Path resolution
 - Orchestrator state and artifacts live under `HALO_HOME`.
