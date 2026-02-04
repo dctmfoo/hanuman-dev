@@ -1,47 +1,25 @@
 # Engine adapters
 
-## Requirement
-Models and CLI argument formats change. We want an abstraction layer so updates happen in one place.
+## Why
+Models and CLI argument formats change. We keep the executor stable by isolating CLI specifics inside adapter modules.
 
-## Engine roles (intended)
-- Planner: Claude Code (Opus default)
-- Executor: Codex CLI (gpt-5.2-codex default)
-- Reviewer: Claude Code (Opus) + Codex review
-- Compound: cheaper model (Sonnet / Codex)
+## Implemented adapters (v0.1)
+- **Codex** (real adapter): `src/engines/codex.ts`
+  - Used by the executor today for the `work` stage.
+- **Claude Code** (adapter): `src/engines/claude.ts`
+  - Wired for stage selection, but not executed yet because only `work` runs.
+- **FakeCodex** (test adapter): `src/engines/fakeCodex.ts`
+  - Used by integration tests and smoke runs.
 
-## Current implementation (v0.1)
+See: `docs/05-status-and-roadmap.md` for current status.
 
-- Only the **Codex** adapter is implemented and wired into the executor today.
-- A **FakeCodex** adapter exists for tests/smoke runs.
-- Claude Code adapter is planned but not yet implemented.
+## Stage selection
+Engine selection is resolved in `src/stages/resolveStageEngine.ts`:
+- Default mapping: `work -> codex`, `plan -> claude`, `review -> claude`
+- Can be overridden per stage via repo config (`stages.<stage>.engine`).
+- **Only the `work` stage executes today**, so plan/review adapters are not yet invoked.
 
-See: `docs/05-status-and-roadmap.md`
-
-## Adapter interface (concept)
-Each adapter provides:
-- `runPlan(input, config)`
-- `runTask(story, repo, config)`
-- `runReview(diff, config)`
-
-## Command templates
-Store command templates in `HALO_HOME/engines/*.json`.
-
-Example: `codex.json`
-```json
-{
-  "bin": "codex",
-  "exec": ["exec", "--full-auto", "-m", "{{model}}", "-c", "reasoning.effort=\"{{reasoning}}\"", "-"],
-  "review": ["review", "--json"]
-}
-```
-
-Example: `claude-code.json`
-```json
-{
-  "bin": "claude",
-  "plan": ["--model", "{{model}}"],
-  "review": ["--model", "{{model}}"]
-}
-```
-
-This keeps the orchestrator stable even when CLIs change flags.
+## Adapter surface (current)
+Adapters implement the `Engine` interface in `src/engines/types.ts` and expose:
+- `execJsonl(...)` to run the CLI and stream JSONL events.
+- Optional `getVersion(...)` and `getFeaturesBestEffort(...)` helpers for diagnostics.
