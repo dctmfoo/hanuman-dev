@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import os from 'node:os';
 import path from 'node:path';
 import fs from 'node:fs/promises';
@@ -14,6 +14,11 @@ async function makeTempRepo(): Promise<string> {
   return dir;
 }
 
+async function ensureTempHaloHome(): Promise<void> {
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'hanuman-halo-home-'));
+  process.env.HALO_HOME = dir;
+}
+
 const prd = {
   schemaVersion: '0.1',
   title: 'Test PRD',
@@ -24,6 +29,10 @@ const prd = {
 } as const;
 
 describe('integration: executor with fake codex', () => {
+  beforeEach(async () => {
+    await ensureTempHaloHome();
+  });
+
   it('marks success when fake codex emits valid output', async () => {
     process.env.HANUMAN_FAKE_CODEX_SCENARIO = 'ok';
 

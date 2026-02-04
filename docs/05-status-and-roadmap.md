@@ -10,20 +10,24 @@ This doc is here so other contributors/agents can pick up work without guessing.
   - Code: `src/engines/codex.ts`
   - Used by: the v0.1 executor
 
+- **Claude Code (adapter)**
+  - Code: `src/engines/claude.ts`
+  - Used by: stage resolver defaults (plan/review), wired for future use
+
 - **FakeCodex (test adapter)**
   - Code: `src/engines/fakeCodex.ts`
   - Used by: `src/integration/fakeCodex.integration.test.ts` + `scripts/smoke-run.sh`
 
 ### Not implemented yet (despite docs/README intent)
 
-- **Claude Code adapter** (planner/reviewer)
+- **Full multi-stage orchestration** (plan → work → review)
   - Intended: plan/review stages should run via Claude Code (Opus)
-  - Current state: *no* `src/engines/claude.ts` adapter is wired
+  - Current state: stage selection is wired, but only `work` executes
 
 ### CLI surface
 
 - `hanuman-dev run --prd <path> [--resume <runDir>] [--sandbox] [--ask-for-approval] [--profile <name>] [-c key=value ...]`
-- `hanuman-dev init` is currently a **stub** in `src/cli.ts`.
+- `hanuman-dev init` creates `.halo/hanuman-dev.json` + `.halo/.gitignore`.
 
 ### Global install readiness
 
@@ -35,6 +39,7 @@ This doc is here so other contributors/agents can pick up work without guessing.
 ## Roadmap (near-term)
 
 ### A) Repo init + config UX (expected flow)
+**Status: Done**
 
 Desired UX:
 1) `cd <repo>`
@@ -49,6 +54,7 @@ Implementation plan:
 - Add `hanuman-dev config print` to show resolved config and sources.
 
 ### B) Stage → engine/model/reasoning configuration
+**Status: Done**
 
 Goal: per-stage settings, e.g.
 - plan/review: Claude Code (opus, high reasoning)
@@ -58,6 +64,7 @@ Notes:
 - "reasoning" is engine-specific; adapters should translate `low|medium|high` to the flags supported by each CLI.
 
 ### C) Claude Code adapter
+**Status: Done (adapter + stage resolver, no multi-stage execution yet)**
 
 - Add `src/engines/claude.ts`
 - Teach the executor to select the engine per stage

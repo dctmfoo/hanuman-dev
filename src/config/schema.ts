@@ -2,7 +2,9 @@ import { z } from 'zod';
 
 export const StageConfigSchema = z
   .object({
-    engine: z.enum(['codex']).optional(),
+    engine: z.enum(['codex', 'claude']).optional(),
+    model: z.string().min(1).optional(),
+    reasoning: z.enum(['low', 'medium', 'high']).optional(),
     sandbox: z.boolean().optional(),
     askForApproval: z.boolean().optional(),
     profile: z.string().min(1).optional(),
@@ -32,8 +34,9 @@ export const RepoConfigSchema = z.object({
     .optional(),
   stages: z
     .object({
-      work: StageConfigSchema.optional()
-      // plan/review will be added once Claude adapter exists
+      work: StageConfigSchema.optional(),
+      plan: StageConfigSchema.optional(),
+      review: StageConfigSchema.optional()
     })
     .optional()
 });
